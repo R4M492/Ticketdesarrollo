@@ -1,0 +1,374 @@
+// Sistema de Gestión de Tickets / Help Desk
+// Esquema normalizado. SQLite para desarrollo local; migrable a PostgreSQL
+// cambiando el provider y DATABASE_URL (sin enums nativos: códigos string).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Catálogos base
+// ============================================================
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // MASTER | TECNICO | USUARIO
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  users       User[]
+}
+
+model Company {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String?
+  status      String       @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  departments Department[]
+  users       User[]
+  tickets     Ticket[]
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  tickets   Ticket[]
+
+  @@unique([companyId, name])
+}
+
+model TicketCategory {
+  id            Int                  @id @default(autoincrement())
+  name          String               @unique
+  description   String?
+  sortOrder     Int                  @default(0)
+  status        String               @default("ACTIVE")
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  subcategories TicketSubcategory[]
+  tickets       Ticket[]
+}
+
+model TicketSubcategory {
+  id         Int            @id @default(autoincrement())
+  categoryId Int
+  category   TicketCategory @relation(fields: [categoryId], references: [id])
+  name       String
+  sortOrder  Int            @default(0)
+  status     String         @default("ACTIVE")
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  tickets    Ticket[]
+
+  @@unique([categoryId, name])
+}
+
+model TicketPriority {
+  id          Int               @id @default(autoincrement())
+  code        String            @unique // CRITICA | ALTA | MEDIA | BAJA
+  name        String
+  description String?
+  color       String            @default("#64748b")
+  sortOrder   Int               @default(0)
+  status      String            @default("ACTIVE")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  sla         SlaConfiguration?
+  tickets     Ticket[]
+}
+
+model TicketStatus {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // NUEVO | PENDIENTE_ASIGNACION | ASIGNADO | EN_PROCESO | ESPERA_USUARIO | RESUELTO | CERRADO | REABIERTO | CANCELADO
+  name        String
+  description String?
+  color       String   @default("#64748b")
+  sortOrder   Int      @default(0)
+  isClosed    Boolean  @default(false)
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tickets     Ticket[]
+}
+
+// ============================================================
+// Usuarios y sesiones
+// ============================================================
+
+model User {
+  id             Int                  @id @default(autoincrement())
+  name           String
+  email          String               @unique
+  passwordHash   String
+  phone          String?
+  position       String?
+  roleId         Int
+  role           Role                 @relation(fields: [roleId], references: [id])
+  companyId      Int?
+  company        Company?             @relation(fields: [companyId], references: [id])
+  departmentId   Int?
+  department     Department?          @relation(fields: [departmentId], references: [id])
+  status         String               @default("ACTIVE") // ACTIVE | INACTIVE
+  avatarUrl      String?
+  lastLoginAt    DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  tickets             Ticket[]             @relation("RequesterTickets")
+  assignedTickets     Ticket[]             @relation("AssignedTickets")
+  comments            TicketComment[]
+  attachments         TicketAttachment[]
+  histories           TicketHistory[]
+  assignmentsMade     TicketAssignment[]   @relation("AssignmentsMade")
+  previousAssignments TicketAssignment[]   @relation("PreviousTechnician")
+  newAssignments      TicketAssignment[]   @relation("NewTechnician")
+  solutions           TicketSolution[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  refreshTokens       RefreshToken[]
+  passwordResets      PasswordReset[]
+  slaUpdated          SlaConfiguration[]   @relation("SlaUpdatedBy")
+}
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
+
+model PasswordReset {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
+
+// ============================================================
+// Núcleo: tickets
+// ============================================================
+
+model Ticket {
+  id                   Int                @id @default(autoincrement())
+  ticketNumber         String             @unique // TKT-AAAA-NNNNNN
+  userId               Int
+  user                 User               @relation("RequesterTickets", fields: [userId], references: [id])
+  subject              String
+  categoryId           Int
+  category             TicketCategory     @relation(fields: [categoryId], references: [id])
+  subcategoryId        Int?
+  subcategory          TicketSubcategory? @relation(fields: [subcategoryId], references: [id])
+  priorityId           Int
+  priority             TicketPriority     @relation(fields: [priorityId], references: [id])
+  statusId             Int
+  status               TicketStatus       @relation(fields: [statusId], references: [id])
+  description          String
+  location             String?
+  device               String?
+  inventoryNumber      String?
+
+  // Instantánea del solicitante al momento de crear el ticket
+  requesterName        String
+  requesterEmail       String
+  requesterPhone       String?
+  companyId            Int?
+  company              Company?           @relation(fields: [companyId], references: [id])
+  departmentId         Int?
+  department           Department?        @relation(fields: [departmentId], references: [id])
+  assignedTechnicianId Int?
+  assignedTechnician   User?              @relation("AssignedTickets", fields: [assignedTechnicianId], references: [id])
+
+  // Fechas de control
+  firstResponseAt      DateTime?
+  resolvedAt           DateTime?
+  closedAt             DateTime?
+  reopenedCount        Int                @default(0)
+
+  // SLA (instantánea al crear, para no depender de cambios posteriores de configuración)
+  slaResponseDueAt     DateTime?
+  slaResolutionDueAt   DateTime?
+
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  comments      TicketComment[]
+  attachments   TicketAttachment[]
+  histories     TicketHistory[]
+  assignments   TicketAssignment[]
+  solutions     TicketSolution[]
+  notifications Notification[]
+
+  @@index([statusId])
+  @@index([priorityId])
+  @@index([userId])
+  @@index([assignedTechnicianId])
+  @@index([createdAt])
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([ticketNumber])
+  @@index([statusId, createdAt])
+  @@index([userId, statusId])
+  @@index([assignedTechnicianId, statusId])
+}
+
+model TicketComment {
+  id          Int               @id @default(autoincrement())
+  ticketId    Int
+  ticket      Ticket            @relation(fields: [ticketId], references: [id])
+  userId      Int
+  user        User              @relation(fields: [userId], references: [id])
+  comment     String
+  createdAt   DateTime          @default(now())
+  attachments TicketAttachment[]
+
+  @@index([ticketId])
+}
+
+model TicketAttachment {
+  id           Int             @id @default(autoincrement())
+  ticketId     Int
+  ticket       Ticket          @relation(fields: [ticketId], references: [id])
+  commentId    Int?
+  comment      TicketComment?  @relation(fields: [commentId], references: [id])
+  userId       Int
+  user         User            @relation(fields: [userId], references: [id])
+  originalName String
+  storedName   String
+  mimeType     String
+  sizeBytes    Int
+  createdAt    DateTime        @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketHistory {
+  id          Int      @id @default(autoincrement())
+  ticketId    Int
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  userId      Int?
+  user        User?    @relation(fields: [userId], references: [id])
+  action      String   // CREATED | ASSIGNED | REASSIGNED | STATUS_CHANGED | PRIORITY_CHANGED | COMMENT_ADDED | RESOLVED | CLOSED | REOPENED | CANCELED | ATTACHMENT_ADDED | TICKET_EDITED
+  description String
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketAssignment {
+  id                   Int      @id @default(autoincrement())
+  ticketId             Int
+  ticket               Ticket   @relation(fields: [ticketId], references: [id])
+  assignedById         Int
+  assignedBy           User     @relation("AssignmentsMade", fields: [assignedById], references: [id])
+  previousTechnicianId Int?
+  previousTechnician   User?    @relation("PreviousTechnician", fields: [previousTechnicianId], references: [id])
+  newTechnicianId      Int
+  newTechnician        User     @relation("NewTechnician", fields: [newTechnicianId], references: [id])
+  reason               String?
+  createdAt            DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketSolution {
+  id                Int      @id @default(autoincrement())
+  ticketId          Int
+  ticket            Ticket   @relation(fields: [ticketId], references: [id])
+  userId            Int
+  user              User     @relation(fields: [userId], references: [id])
+  problemIdentified String
+  cause             String?
+  solutionApplied   String
+  observations      String?
+  timeUsedMinutes   Int?
+  createdAt         DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// ============================================================
+// SLA, notificaciones, auditoría, configuración
+// ============================================================
+
+model SlaConfiguration {
+  id              Int             @id @default(autoincrement())
+  priorityId      Int             @unique
+  priority        TicketPriority  @relation(fields: [priorityId], references: [id])
+  responseMinutes Int
+  resolutionHours Int
+  active          Boolean         @default(true)
+  updatedById     Int?
+  updatedBy       User?           @relation("SlaUpdatedBy", fields: [updatedById], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  ticketId  Int?
+  ticket    Ticket?   @relation(fields: [ticketId], references: [id])
+  type      String    // TICKET_CREATED | TICKET_ASSIGNED | TICKET_REASSIGNED | COMMENT_ADDED | STATUS_CHANGED | TICKET_RESOLVED | TICKET_CLOSED | TICKET_REOPENED | TICKET_CANCELED | TICKET_OVERDUE | PASSWORD_RESET
+  title     String
+  message   String
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id          Int       @id @default(autoincrement())
+  userId      Int?
+  user        User?     @relation(fields: [userId], references: [id])
+  action      String
+  entityType  String
+  entityId    String?
+  description String
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
