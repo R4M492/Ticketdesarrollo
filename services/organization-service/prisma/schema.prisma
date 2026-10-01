@@ -1,0 +1,39 @@
+// organization-service — empresas y departamentos.
+//
+// Adaptado desde backend/prisma/schema.prisma: se preservan Company y Department, pero se
+// eliminan las relaciones @relation hacia User (identity-service) y Ticket (ticketing-service).
+// Esos servicios guardan companyId/departmentId como IDs sueltos, no como FK reales.
+
+generator client {
+  provider = "prisma-client-js"
+  // Salida propia (no compartida) para evitar que el hoisting de npm workspaces haga que
+  // el @prisma/client generado de un servicio sobrescriba el de otro en node_modules raíz.
+  output   = "../node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String?
+  status      String       @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  departments Department[]
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, name])
+}
