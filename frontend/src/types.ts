@@ -175,6 +175,23 @@ export interface Notification {
   createdAt: string;
 }
 
+export type JobStatus = "PROCESSING" | "RETRYING" | "COMPLETED" | "FAILED";
+
+export interface Job {
+  // notification-service (MongoDB), id = eventId del mensaje de RabbitMQ que lo originó.
+  id: string;
+  type: string;
+  status: JobStatus;
+  attempt: number;
+  maxAttempts: number;
+  ticketId: number | null;
+  subject: string;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
+
 export interface Paginated<T> {
   data: T[];
   total: number;

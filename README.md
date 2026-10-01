@@ -1,5 +1,5 @@
 
-# HelpDesk — Sistema de Gestión de Tickets
+# MicroHelpDesk — Sistema de Gestión de Tickets
 
 ## 🏗️ Arquitectura: microservicios
 
@@ -111,7 +111,7 @@ mysql mongodb rabbitmq -d`, por ejemplo) y variables de entorno locales (`DATABA
 servicio.
 
 **Validación automatizada:** [`tests/contract/`](tests/contract/) tiene la única suite de pruebas
-del proyecto — una colección Postman/Newman que corre contra el gateway real (114 requests, 223
+del proyecto — una colección Postman/Newman que corre contra el gateway real (117 requests, 229
 aserciones). Es la red de seguridad de regresión: antes de cambiar algo en un servicio, correrla
 (`npx newman run tests/contract/helpdesk-api.postman_collection.json -e
 tests/contract/local.postman_environment.json`) con el stack levantado y la base de datos recién
@@ -128,6 +128,37 @@ sembrada.
 - El MASTER asigna/reasigna con motivo; cada evento queda en la **línea de tiempo** y en **auditoría**.
 - El SLA se calcula por prioridad (respuesta y resolución) con indicadores: 🟢 normal · 🟡 próximo a vencer · 🔴 vencido.
 
+## ⚙️ Colas y trabajos asíncronos
+
+RabbitMQ no es solo infraestructura declarada — es el bus de eventos real entre servicios (exchange
+topic `helpdesk.events`, ver [`packages/common/src/events.ts`](packages/common/src/events.ts)).
+Tres tipos de trabajo fluyen por ahí hoy:
+
+| Evento | Publica | Consume | Qué hace |
+|---|---|---|---|
+| `audit.log` | todos los servicios | `audit-service` | Persiste cada acción auditable en Mongo |
+| `notification.create` | `identity-service`, `ticketing-service` | `notification-service` | Persiste la notificación in-app (campanita) |
+| `email.send` | `ticketing-service` (al crear un ticket) | `notification-service` | Simula el envío del correo de confirmación — **con fallo intermitente a propósito**, para poder demostrar reintentos |
+
+**Reintentos y dead-letter queue:** si el handler de un consumidor lanza una excepción, el mensaje
+no se descarta — se reencola en `<cola>.retry` con backoff lineal (intento 1: 3s, intento 2: 6s)
+hasta agotar 3 intentos; al agotarlos se mueve a `<cola>.dlq` para inspección manual. Esto aplica a
+los 3 eventos de la tabla, pero es más fácil de ver con `email.send`, porque tiene una probabilidad
+de fallo simulada del 40% por intento. El estado de cada intento de `email.send` queda registrado
+en una colección `jobs` de `notification-service`, consultable vía:
+
+- `GET /api/jobs?ticketId=<id>` — trabajos de un ticket.
+- `GET /api/jobs/:id` — detalle de un trabajo puntual.
+
+En el frontend, el detalle de un ticket ([`TicketDetail.tsx`](frontend/src/pages/TicketDetail.tsx))
+muestra el estado en vivo ("Enviando…" → "Reintentando (intento N de 3)" → "Correo enviado" o
+"Falló tras 3 intentos: ‹motivo›"), refrescándose solo mientras el trabajo siga en curso.
+
+Para verlo en acción: crea un ticket nuevo y mira la sección "Confirmación por correo" en su
+detalle — tiene ~22% de probabilidad de fallar las 3 veces (0.4³) y terminar en la DLQ; si no falla
+a la primera, igual puedes ver los logs de reintento con `docker compose logs -f
+notification-service`.
+
 ## 🔐 Seguridad
 
 - Contraseñas con **bcrypt** (nunca texto plano).
@@ -141,7 +172,7 @@ sembrada.
 ## 📌 Notas
 
 - Los adjuntos se guardan en el volumen `attachment-uploads` de `attachment-service` (Mongo para metadatos, filesystem para el binario); en producción se recomienda un bucket (S3) — la capa está separada para migrarlo.
-- Las notificaciones por correo están **preparadas** (interfaz de servicio) pero deshabilitadas; la recuperación de contraseña entrega el enlace en la respuesta **solo en desarrollo**.
+- El correo de confirmación de ticket (`email.send`, ver sección de colas arriba) es **simulado**: no hay proveedor SMTP conectado, "enviar" es un `console.log` en `notification-service`. La recuperación de contraseña entrega el enlace en la respuesta **solo en desarrollo**, por el mismo motivo.
 - Base de datos: cada microservicio respaldado por datos relacionales (`identity`, `organization`, `catalog`, `ticketing`) usa su propia base **MySQL** (`provider = "mysql"` en su `prisma/schema.prisma`); los respaldados por documentos (`attachment`, `notification`, `audit`, `settings`) usan **MongoDB**. El esquema se aplica con `prisma db push` (no hay migraciones versionadas todavía) y se siembra con `prisma db seed` automáticamente al arrancar cada contenedor — ver `docker-compose.yml`.
 
 ## ⚠️ Pendientes conocidos (fuera del alcance de la migración)

@@ -6,6 +6,7 @@ import type {
   Company,
   DashboardSummary,
   Department,
+  Job,
   Notification,
   Paginated,
   Priority,
@@ -170,6 +171,11 @@ export const notificationsApi = {
   unreadCount: () => api.get("/notifications/unread-count").then((r) => r.data as { count: number }),
   markRead: (id: string) => api.post(`/notifications/${id}/read`),
   markAllRead: () => api.post("/notifications/read-all"),
+};
+
+// ---------- Trabajos en cola (ver notification-service/src/consumers/email-consumer.ts) ----------
+export const jobsApi = {
+  listByTicket: (ticketId: number) => api.get("/jobs", { params: { ticketId } }).then((r) => r.data as Job[]),
 };
 
 // ---------- Dashboard ----------

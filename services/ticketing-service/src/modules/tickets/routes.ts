@@ -12,6 +12,7 @@ import { getMe, lookupUser, lookupUsers } from "../../lib/identity-client.js";
 import { getCategories, getPriorities } from "../../lib/catalog-client.js";
 import { enrichTicket, enrichTickets, buildEnrichContext } from "../../lib/enrich.js";
 import { getTicketOrThrow, ALLOWED_TRANSITIONS, TECHNICIAN_MANUAL_TRANSITIONS, getStatusByCode, getStatusById, notifyRequester, notifyTechnician, notifyRole } from "./helpers.js";
+import { sendTicketConfirmationEmail } from "../../lib/notifications.js";
 
 // Adaptado desde backend/src/modules/tickets/routes.ts (981 líneas) — el módulo más grande y más
 // acoplado del monolito. Cambios respecto al original, resumidos (el detalle de cada uno está en
@@ -293,6 +294,7 @@ ticketsRouter.post("/", validate({ body: createSchema }), async (req, res, next)
       ticketSubject: ticket.subject,
     }, authorization);
     notifyRequester(ticket, NOTIFICATION_TYPES.TICKET_CREATED, "Ticket creado", `Tu ticket ${ticket.ticketNumber} fue registrado correctamente.`);
+    sendTicketConfirmationEmail(ticket, me.email);
 
     const ctx = await buildEnrichContext([ticket], authorization);
     res.status(201).json(enrichTicket(ticket, ctx));

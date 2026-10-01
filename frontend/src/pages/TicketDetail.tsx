@@ -15,14 +15,16 @@ import {
   Download,
   History,
   AlertTriangle,
+  Mail,
+  Loader2,
 } from "lucide-react";
-import { ticketsApi, usersApi } from "../api/endpoints";
+import { ticketsApi, usersApi, jobsApi } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 import { apiError } from "../api/client";
 import { ErrorAlert, Modal, PageLoader, PriorityBadge, SlaBadge, StatusBadge } from "../components/ui";
 import { fmtDate, fmtBytes, fmtMinutes, timeAgo } from "../utils/format";
 import { useOrgDirectory } from "../hooks/useOrgDirectory";
-import type { TicketAttachment, TimelineItem } from "../types";
+import type { Job, TicketAttachment, TimelineItem } from "../types";
 
 export default function TicketDetail() {
   const { id } = useParams();
@@ -34,6 +36,16 @@ export default function TicketDetail() {
   const ticket = useQuery({ queryKey: ["ticket", ticketId], queryFn: () => ticketsApi.get(ticketId) });
   const timeline = useQuery({ queryKey: ["ticket-history", ticketId], queryFn: () => ticketsApi.history(ticketId) });
   const technicians = useQuery({ queryKey: ["technicians"], queryFn: usersApi.technicians });
+  // Trabajo asíncrono de confirmación por correo (ver notification-service/src/consumers/email-consumer.ts).
+  // Se refresca solo mientras esté en curso — al llegar a un estado final (COMPLETED/FAILED) deja de pedir.
+  const emailJob = useQuery({
+    queryKey: ["ticket-email-job", ticketId],
+    queryFn: () => jobsApi.listByTicket(ticketId),
+    refetchInterval: (query) => {
+      const latest = query.state.data?.[0];
+      return latest && (latest.status === "PROCESSING" || latest.status === "RETRYING") ? 1500 : false;
+    },
+  });
   // Fase 7: attachment-service es dueño de los adjuntos — ya no vienen embebidos en el comentario
   // (ver backend/tickets/helpers.ts original vs. la nueva forma de TicketComment). Se traen aparte
   // y se agrupan por commentId para pintarlos en la línea de tiempo.
@@ -229,6 +241,16 @@ export default function TicketDetail() {
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Descripción del problema</p>
           <p className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">{t.description}</p>
         </div>
+
+        {/* Trabajo en cola: confirmación por correo */}
+        {emailJob.data && emailJob.data.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Mail className="h-3 w-3" /> Confirmación por correo
+            </p>
+            <EmailJobBadge job={emailJob.data[0]} />
+          </div>
+        )}
 
         {/* Adjuntos generales del ticket (subidos al crearlo, sin comentario asociado) */}
         {(attachments.data ?? []).filter((a) => a.commentId == null).length > 0 && (
@@ -451,6 +473,38 @@ export default function TicketDetail() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+// Estado del trabajo asíncrono que simula el envío del correo de confirmación — demuestra
+// reintentos con backoff y dead-letter queue (ver packages/common/src/events.ts y
+// notification-service/src/consumers/email-consumer.ts).
+function EmailJobBadge({ job }: { job: Job }) {
+  if (job.status === "PROCESSING") {
+    return (
+      <span className="badge bg-slate-100 text-slate-600">
+        <Loader2 className="h-3 w-3 animate-spin" /> Enviando…
+      </span>
+    );
+  }
+  if (job.status === "RETRYING") {
+    return (
+      <span className="badge bg-amber-50 text-amber-700">
+        <RefreshCw className="h-3 w-3 animate-spin" /> Reintentando (intento {job.attempt} de {job.maxAttempts})
+      </span>
+    );
+  }
+  if (job.status === "COMPLETED") {
+    return (
+      <span className="badge bg-green-50 text-green-700">
+        <CheckCircle2 className="h-3 w-3" /> Correo enviado
+      </span>
+    );
+  }
+  return (
+    <span className="badge bg-red-50 text-red-700" title={job.lastError ?? undefined}>
+      <XCircle className="h-3 w-3" /> Falló tras {job.maxAttempts} intentos{job.lastError ? `: ${job.lastError}` : ""}
+    </span>
   );
 }
 

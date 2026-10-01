@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Headset, Lock, Mail, AlertTriangle, LogIn } from "lucide-react";
+import { Lock, Mail, AlertTriangle, LogIn } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { apiError } from "../api/client";
 import { useQuery } from "@tanstack/react-query";
 import { settingsApi } from "../api/endpoints";
+import Logo from "../components/Logo";
 
 export default function Login() {
   const { login, user } = useAuth();
@@ -39,11 +40,8 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-900 via-brand-800 to-slate-900 p-4">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-white">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
-            <Headset className="h-7 w-7" />
-          </div>
-          <h1 className="text-2xl font-bold">{settings?.systemName || "HelpDesk — Soporte Técnico"}</h1>
-          <p className="mt-1 text-sm text-brand-100">Gestión de tickets para soporte técnico</p>
+          <Logo type="full" surface="dark" className="h-24 w-auto" />
+          <p className="mt-2 text-sm text-brand-100">{settings?.systemName && settings.systemName !== "MicroHelpDesk" ? settings.systemName : "Una red de soporte. Una identidad conectada."}</p>
         </div>
 
         <div className="rounded-2xl bg-white p-6 shadow-2xl sm:p-8">

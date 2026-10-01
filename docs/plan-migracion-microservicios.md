@@ -1,4 +1,4 @@
-# Plan de Migración a Microservicios — Sistema de Gestión de Tickets (HelpDesk)
+# Plan de Migración a Microservicios — Sistema de Gestión de Tickets (MicroHelpDesk)
 
 > **Tipo de documento:** Análisis arquitectónico + plan de migración + bitácora de implementación (documento vivo).
 > **Estado (2026-10-01): migración completa y monolito dado de baja.** Las secciones 1-11 son el análisis y plan originales (previos a tocar código). La sección 12 documenta la implementación real, fase por fase — **los 9 microservicios de dominio tienen lógica de negocio real**, corriendo en Docker, validada de punta a punta (ver 12.9, cierre real tras retomar la Fase 7 de adjuntos) y con la colección de contrato en verde contra el gateway (ver `tests/contract/README.md`). El monolito original (`backend/`) nunca se modificó mientras existió, y se eliminó del repositorio una vez confirmado que los microservicios lo cubrían por completo — todas las referencias a `backend/` en el resto de este documento (secciones 1-11 y 12) son históricas, describen el estado del repo *durante* la migración, no el actual.

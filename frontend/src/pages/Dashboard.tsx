@@ -30,12 +30,27 @@ import {
 } from "recharts";
 import { dashboardApi } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { PageLoader, ErrorAlert } from "../components/ui";
 import { fmtMinutes } from "../utils/format";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const role = user?.role.code ?? "USUARIO";
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const gridColor = isDark ? "#334155" : "#e2e8f0";
+  const axisColor = isDark ? "#94a3b8" : "#64748b";
+  const cursorFill = isDark ? "rgba(148, 163, 184, 0.15)" : "rgba(148, 163, 184, 0.15)";
+  const tooltipContentStyle = {
+    backgroundColor: isDark ? "#1e293b" : "#ffffff",
+    border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+    borderRadius: 8,
+    fontSize: 12,
+    color: isDark ? "#e2e8f0" : "#1e293b",
+  };
+  const tooltipLabelStyle = { color: isDark ? "#e2e8f0" : "#1e293b" };
+  const tooltipItemStyle = { color: isDark ? "#e2e8f0" : "#1e293b" };
 
   const summary = useQuery({ queryKey: ["dashboard-summary", role], queryFn: dashboardApi.summary });
   const byStatus = useQuery({ queryKey: ["dashboard-by-status"], queryFn: dashboardApi.byStatus });
@@ -126,7 +141,7 @@ export default function Dashboard() {
                   <Cell key={String(d.code)} fill={String(d.color || "#94a3b8")} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => [v, "tickets"]} />
+              <Tooltip formatter={(v: number) => [v, "tickets"]} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
@@ -140,7 +155,7 @@ export default function Dashboard() {
                   <Cell key={String(d.code)} fill={String(d.color || "#94a3b8")} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => [v, "tickets"]} />
+              <Tooltip formatter={(v: number) => [v, "tickets"]} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
@@ -149,10 +164,10 @@ export default function Dashboard() {
         <ChartCard title="Tickets por categoría">
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={byCategory.data ?? []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="category" tick={{ fontSize: 11 }} interval={0} angle={-35} textAnchor="end" height={70} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => [v, "tickets"]} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <XAxis dataKey="category" tick={{ fontSize: 11, fill: axisColor }} interval={0} angle={-35} textAnchor="end" height={70} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: axisColor }} />
+              <Tooltip formatter={(v: number) => [v, "tickets"]} cursor={{ fill: cursorFill }} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
               <Bar dataKey="value" fill="#3f6aec" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -162,10 +177,10 @@ export default function Dashboard() {
           <ChartCard title="Tickets por técnico">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={byTech.data ?? []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="technician" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number) => [v, "tickets"]} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis dataKey="technician" tick={{ fontSize: 11, fill: axisColor }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: axisColor }} />
+                <Tooltip formatter={(v: number) => [v, "tickets"]} cursor={{ fill: cursorFill }} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
                 <Bar dataKey="value" fill="#06b6d4" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -175,10 +190,10 @@ export default function Dashboard() {
         <ChartCard title="Tickets creados por día (últimos 14 días)">
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={perDay.data ?? []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="day" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => [v, "tickets"]} labelFormatter={(l: string) => `Día ${l}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: axisColor }} tickFormatter={(v: string) => v.slice(5)} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: axisColor }} />
+              <Tooltip formatter={(v: number) => [v, "tickets"]} labelFormatter={(l: string) => `Día ${l}`} contentStyle={tooltipContentStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} />
               <Line type="monotone" dataKey="value" stroke="#3f6aec" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -187,12 +202,15 @@ export default function Dashboard() {
         <ChartCard title="Tiempo promedio de resolución (min, mensual)">
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={avgRes.data ?? []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: axisColor }} />
+              <YAxis tick={{ fontSize: 11, fill: axisColor }} />
               <Tooltip
                 formatter={(v: number) => [`${Math.round(v)} min`, "promedio"]}
                 labelFormatter={(l: string) => `Mes ${l}`}
+                contentStyle={tooltipContentStyle}
+                labelStyle={tooltipLabelStyle}
+                itemStyle={tooltipItemStyle}
               />
               <Line type="monotone" dataKey="avgMinutes" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>

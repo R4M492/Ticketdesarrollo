@@ -13,7 +13,7 @@ import { logAudit } from "../../lib/audit.js";
 const requireAuth = authenticate(env.JWT_SECRET);
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
-  systemName: "HelpDesk — Soporte Técnico",
+  systemName: "MicroHelpDesk — Soporte Técnico",
   businessName: "",
   uploadMaxMb: "10",
   notificationEmailEnabled: "false",

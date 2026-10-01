@@ -1,7 +1,7 @@
 {
 	"info": {
-		"name": "HelpDesk API - Contract Tests",
-		"description": "Colección de pruebas de contrato para el backend monolítico de HelpDesk (Node/Express/TypeScript/Prisma). Es la red de seguridad de regresión requerida por el punto 5 del gate de salida antes de migrar a microservicios (ver docs/plan-migracion-microservicios.md, sección 11). Ejecutar de arriba hacia abajo: cada carpeta produce datos (ids) que las siguientes carpetas reutilizan mediante variables de entorno.",
+		"name": "MicroHelpDesk API - Contract Tests",
+		"description": "Colección de pruebas de contrato para el backend monolítico de MicroHelpDesk (Node/Express/TypeScript/Prisma). Es la red de seguridad de regresión requerida por el punto 5 del gate de salida antes de migrar a microservicios (ver docs/plan-migracion-microservicios.md, sección 11). Ejecutar de arriba hacia abajo: cada carpeta produce datos (ids) que las siguientes carpetas reutilizan mediante variables de entorno.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -4902,7 +4902,7 @@
 						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"systemName\": \"HelpDesk QA — Contract Tests\",\n  \"slaWarningPercent\": 85\n}",
+							"raw": "{\n  \"systemName\": \"MicroHelpDesk QA — Contract Tests\",\n  \"slaWarningPercent\": 85\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -5019,6 +5019,128 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "14 - Jobs",
+			"description": "Trabajos asíncronos (ver services/notification-service/src/consumers/email-consumer.ts): al crear un ticket (carpeta 08), ticketing-service publica \"email.send\", que notification-service procesa con reintentos + backoff (packages/common/src/events.ts) y deja rastro en la colección `jobs`. No se asume un estado terminal — el backoff puede tardar más que toda la corrida de la colección — solo se valida la forma de la respuesta y que el estado sea uno de los válidos.",
+			"item": [
+				{
+					"name": "GET Trabajos del ticket (confirmación por correo)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/jobs?ticketId={{ticketId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs"
+							],
+							"query": [
+								{
+									"key": "ticketId",
+									"value": "{{ticketId}}"
+								}
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  pm.expect(pm.response.json()).to.be.an('array');\n});",
+									"pm.test(\"Si hay un job de email, tiene forma válida y estado reconocido\", function () {\n  const jobs = pm.response.json();\n  const emailJob = jobs.find((j) => j.type === 'EMAIL_SEND');\n  if (!emailJob) return; // el worker puede no haber procesado el evento todavía\n  pm.expect(emailJob).to.have.property('id');\n  pm.expect(emailJob).to.have.property('attempt');\n  pm.expect(['PROCESSING', 'RETRYING', 'COMPLETED', 'FAILED']).to.include(emailJob.status);\n  pm.environment.set('emailJobId', emailJob.id);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Detalle de un trabajo por id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/{{emailJobId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"{{emailJobId}}"
+							]
+						},
+						"description": "Depende de que el request anterior haya encontrado un job de email y guardado emailJobId."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (!pm.environment.get('emailJobId')) {\n  console.log('Sin emailJobId todavía (el worker no había procesado el evento) — se omite.');\n} else {\n  pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });\n  pm.test(\"La respuesta tiene attempt y maxAttempts\", function () {\n    const job = pm.response.json();\n    pm.expect(job).to.have.property('attempt');\n    pm.expect(job).to.have.property('maxAttempts');\n  });\n}"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Trabajo inexistente (negativo)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/jobs/000000000000000000000000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"jobs",
+								"000000000000000000000000"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 404\", function () { pm.response.to.have.status(404); });"
 								]
 							},
 							"packages": {}

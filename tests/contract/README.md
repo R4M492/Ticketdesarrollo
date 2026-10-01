@@ -1,4 +1,4 @@
-# Pruebas de contrato — HelpDesk API
+# Pruebas de contrato — MicroHelpDesk API
 
 Colección Postman (v2.1) que cubre los endpoints reales de la arquitectura de microservicios, ejecutados **a
 través del gateway** (Traefik, `http://localhost/api`, ver `gateway/traefik/dynamic.yml`), no contra ningún
@@ -13,9 +13,16 @@ durante las 9+1 fases de extracción a microservicios.
 **Adaptación post-migración (2026-09-30):** con los 9 microservicios ya detrás del gateway, se adaptó esta misma
 colección para que apunte a `http://localhost/api` (antes `http://localhost:3001/api`, el monolito) y para que
 sus requests reflejen el contrato real de los servicios nuevos, no el del monolito. Se corrió contra el stack
-completo (`docker compose up`, base de datos reseteada) y quedó en **114 requests / 223 aserciones, 0 fallos**.
+completo (`docker compose up`, base de datos reseteada) y quedó en 114 requests / 223 aserciones, 0 fallos.
 Sigue siendo la única suite automatizada del proyecto — todo lo validado durante las fases de migración fue con
 `curl` manual, sesión por sesión.
+
+**Colas con reintentos (2026-10-01):** se agregó la carpeta `14 - Jobs`, que cubre `GET /api/jobs` y
+`GET /api/jobs/:id` — el endpoint de `notification-service` que expone el estado de los trabajos
+asíncronos (ver la sección "Colas y trabajos asíncronos" del [`README.md`](../../README.md) raíz).
+Como el estado de un job depende de un backoff que puede tardar más que toda la corrida de la
+colección, esas pruebas no asumen un estado terminal — solo validan la forma de la respuesta y que
+el estado sea uno de los reconocidos. Total actual: **117 requests / 229 aserciones, 0 fallos**.
 
 No se modificó ningún archivo de `backend/`, `frontend/`, `gateway/` ni `services/` para adaptar esta colección —
 todo el cambio vive bajo `tests/contract/`.
@@ -82,7 +89,7 @@ colección, ya vienen del seed):
 
 **Postman:** File → Import → selecciona `helpdesk-api.postman_collection.json` y
 `local.postman_environment.json` (puedes arrastrar ambos archivos a la vez). Luego elige el entorno
-"HelpDesk API - Local" en el selector superior derecho antes de ejecutar cualquier petición.
+"MicroHelpDesk API - Local" en el selector superior derecho antes de ejecutar cualquier petición.
 
 **Insomnia:** Insomnia importa colecciones Postman v2.1 vía Application → Preferences → Data → Import Data →
 "From File", apuntando al archivo de la colección. Las variables de entorno de Postman requieren mapearlas

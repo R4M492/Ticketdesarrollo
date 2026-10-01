@@ -30,7 +30,7 @@ http:
       service: attachment
       priority: 100
     notification:
-      rule: "PathPrefix(`/api/notifications`)"
+      rule: "PathPrefix(`/api/notifications`) || PathPrefix(`/api/jobs`)"
       service: notification
     audit:
       rule: "PathPrefix(`/api/audit-logs`)"

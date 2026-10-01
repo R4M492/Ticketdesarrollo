@@ -40,3 +40,26 @@ export async function notifyRole(
   const users = await getUsersByRole(roleCode, authorization);
   await Promise.all(users.map((u) => createNotification({ ...input, userId: u.id })));
 }
+
+/**
+ * Publica "email.send" — lo consume notification-service (ver
+ * services/notification-service/src/consumers/email-consumer.ts), que simula el envío y
+ * registra el progreso como un "trabajo" consultable vía GET /api/jobs. A diferencia de
+ * "notification.create" (persistencia interna, sin reintentos visibles), este job tiene una
+ * tasa de fallo simulada a propósito: existe para demostrar el camino de reintentos/DLQ de
+ * packages/common/src/events.ts, no para enviar correos reales (no hay proveedor SMTP
+ * configurado en este entorno).
+ */
+export async function sendTicketConfirmationEmail(
+  ticket: { id: number; ticketNumber: string; subject: string },
+  to: string,
+): Promise<void> {
+  await publishEvent(env.RABBITMQ_URL, "email.send", {
+    to,
+    subject: `Confirmación de ticket ${ticket.ticketNumber}`,
+    body: `Tu ticket "${ticket.subject}" fue registrado con el número ${ticket.ticketNumber}. Te avisaremos por este medio cuando tenga una actualización.`,
+    ticketId: ticket.id,
+    ticketNumber: ticket.ticketNumber,
+    kind: "TICKET_CREATED",
+  });
+}
