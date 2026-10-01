@@ -1,0 +1,377 @@
+networks:
+  helpdesk-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  mongo-data:
+  rabbitmq-data:
+  attachment-uploads:
+
+services:
+  # ---------------------------------------------------------------------------
+  # Infraestructura de datos y mensajería (ver plan de migración, secciones 4 y 7)
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: helpdesk-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./infra/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongodb:
+    image: mongo:7
+    container_name: helpdesk-mongo
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: helpdesk-rabbitmq
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # UI de administración
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer
+    container_name: helpdesk-adminer
+    ports:
+      - "8081:8080"
+    depends_on: [mysql]
+    networks: [helpdesk-net]
+
+  mongo-express:
+    image: mongo-express
+    container_name: helpdesk-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_BASICAUTH: "false"
+    ports:
+      - "8082:8081"
+    depends_on: [mongodb]
+    networks: [helpdesk-net]
+
+  # ---------------------------------------------------------------------------
+  # API Gateway (ver plan de migración, sección 3.3). Enruta por PathPrefix hacia
+  # cada servicio según gateway/traefik/dynamic.yml (file provider explícito —
+  # el descubrimiento por labels de Docker no es viable en este entorno, ver
+  # el comentario dentro de dynamic.yml).
+  # ---------------------------------------------------------------------------
+  gateway:
+    image: traefik:v3.0
+    container_name: helpdesk-gateway
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+    volumes:
+      - ./gateway/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./gateway/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    ports:
+      - "80:80"     # entrypoint único que consumiría el frontend
+      - "8090:8080" # dashboard de Traefik
+    networks: [helpdesk-net]
+
+  # ---------------------------------------------------------------------------
+  # Microservicios de dominio (backend respaldado por MySQL)
+  # ---------------------------------------------------------------------------
+  identity-service:
+    build:
+      context: .
+      dockerfile: services/identity-service/Dockerfile
+    container_name: helpdesk-identity-service
+    # Aplica el schema.prisma del servicio contra su base antes de arrancar (equivalente a un
+    # "migrate deploy" para este esqueleto sin migraciones formales todavía) y siembra los
+    # roles + usuarios demo (prisma/seed.ts usa upsert, así que re-arrancar el contenedor no duplica).
+    command: sh -c "npx prisma db push --accept-data-loss && npx prisma db seed && npm run dev"
+    environment:
+      PORT: 4001
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      DATABASE_URL: mysql://helpdesk:helpdesk@mysql:3306/identity_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      # Dependencia "blanda": solo se llama al crear/editar un usuario con companyId/departmentId,
+      # no al arrancar — por eso organization-service no está en depends_on (a diferencia de mysql
+      # y rabbitmq, que sí son dependencias duras de arranque).
+      ORGANIZATION_SERVICE_URL: http://organization-service:4002
+    ports:
+      - "4001:4001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  organization-service:
+    build:
+      context: .
+      dockerfile: services/organization-service/Dockerfile
+    container_name: helpdesk-organization-service
+    command: sh -c "npx prisma db push --accept-data-loss && npx prisma db seed && npm run dev"
+    environment:
+      PORT: 4002
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      DATABASE_URL: mysql://helpdesk:helpdesk@mysql:3306/organization_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "4002:4002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: services/catalog-service/Dockerfile
+    container_name: helpdesk-catalog-service
+    command: sh -c "npx prisma db push --accept-data-loss && npx prisma db seed && npm run dev"
+    environment:
+      PORT: 4003
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      DATABASE_URL: mysql://helpdesk:helpdesk@mysql:3306/catalog_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "4003:4003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  ticketing-service:
+    build:
+      context: .
+      dockerfile: services/ticketing-service/Dockerfile
+    container_name: helpdesk-ticketing-service
+    command: sh -c "npx prisma db push --accept-data-loss && npm run dev"
+    environment:
+      PORT: 4004
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      DATABASE_URL: mysql://helpdesk:helpdesk@mysql:3306/ticketing_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      # Dependencias blandas (solo se llaman al procesar un ticket puntual, no al arrancar).
+      IDENTITY_SERVICE_URL: http://identity-service:4001
+      CATALOG_SERVICE_URL: http://catalog-service:4003
+      ORGANIZATION_SERVICE_URL: http://organization-service:4002
+    ports:
+      - "4004:4004"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4004/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # Microservicios de dominio (backend respaldado por MongoDB)
+  # ---------------------------------------------------------------------------
+  attachment-service:
+    build:
+      context: .
+      dockerfile: services/attachment-service/Dockerfile
+    container_name: helpdesk-attachment-service
+    environment:
+      PORT: 4005
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: attachment_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      TICKETING_SERVICE_URL: http://ticketing-service:4004
+    ports:
+      - "4005:4005"
+    volumes:
+      - attachment-uploads:/app/services/attachment-service/uploads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4005/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: helpdesk-notification-service
+    environment:
+      PORT: 4006
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: notification_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "4006:4006"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4006/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: services/audit-service/Dockerfile
+    container_name: helpdesk-audit-service
+    environment:
+      PORT: 4007
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: audit_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "4007:4007"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4007/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  reporting-service:
+    build:
+      context: .
+      dockerfile: services/reporting-service/Dockerfile
+    container_name: helpdesk-reporting-service
+    # Fase 9: composición vía API en tiempo real (no CQRS por eventos) — no usa Mongo ni RabbitMQ,
+    # ver docs/plan-migracion-microservicios.md sección 12.7. Son dependencias "blandas": si algún
+    # servicio de abajo está caído, solo falla ese endpoint puntual, no el arranque.
+    environment:
+      PORT: 4008
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      TICKETING_SERVICE_URL: http://ticketing-service:4004
+      CATALOG_SERVICE_URL: http://catalog-service:4003
+      ORGANIZATION_SERVICE_URL: http://organization-service:4002
+      IDENTITY_SERVICE_URL: http://identity-service:4001
+    ports:
+      - "4008:4008"
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  settings-service:
+    build:
+      context: .
+      dockerfile: services/settings-service/Dockerfile
+    container_name: helpdesk-settings-service
+    environment:
+      PORT: 4009
+      NODE_ENV: development
+      JWT_SECRET: dev-shared-jwt-secret-change-me
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: settings_db
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "4009:4009"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [helpdesk-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4009/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # Frontend (SPA). Habla con /api relativo; el proxy del dev server de Vite reenvía
+  # esas llamadas al gateway (Traefik), que a su vez enruta a cada microservicio.
+  # Ver frontend/vite.config.ts (API_PROXY_TARGET) — el código de la SPA no cambió.
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: helpdesk-frontend
+    environment:
+      API_PROXY_TARGET: http://gateway:80
+    ports:
+      - "5174:5173" # 5173 puede estar ocupado por otro proyecto en la máquina host
+    depends_on:
+      - gateway
+    networks: [helpdesk-net]
