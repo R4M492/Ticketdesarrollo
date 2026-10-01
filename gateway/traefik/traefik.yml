@@ -1,0 +1,14 @@
+# Configuración estática de Traefik (API Gateway local). El enrutamiento dinámico vive en
+# dynamic.yml (file provider) — ver la nota ahí sobre por qué no se usa el provider de Docker.
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+
+api:
+  dashboard: true
+  insecure: true # solo para desarrollo local; nunca así en producción

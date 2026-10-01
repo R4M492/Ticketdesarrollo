@@ -1,0 +1,81 @@
+# Enrutamiento dinámico de Traefik vía "file provider" (estático, explícito) en vez de
+# descubrimiento automático por labels de Docker: el socket de Docker montado en el contenedor
+# del gateway no es utilizable en este entorno (sandbox), y para un conjunto fijo y conocido de
+# 9 microservicios un archivo explícito es igual de válido y más fácil de leer.
+#
+# Cada entrada apunta al nombre del servicio en docker-compose.yml (resuelto por la red interna
+# "helpdesk-net"), no a localhost — el gateway y los servicios son contenedores distintos.
+
+http:
+  routers:
+    identity:
+      rule: "PathPrefix(`/api/auth`) || PathPrefix(`/api/users`)"
+      service: identity
+    organization:
+      rule: "PathPrefix(`/api/companies`) || PathPrefix(`/api/departments`)"
+      service: organization
+    catalog:
+      rule: "PathPrefix(`/api/categories`) || PathPrefix(`/api/priorities`) || PathPrefix(`/api/statuses`)"
+      service: catalog
+    # /api/tickets/:id/attachments* vive en attachment-service (Fase 7), no en ticketing-service,
+    # aunque comparta el mismo prefijo /api/tickets — por eso "attachment" tiene mayor "priority"
+    # explícita: Traefik evalúa los routers de mayor a menor prioridad y usa el primero que matchea,
+    # así que esta regla más específica se evalúa antes que el PathPrefix genérico de "ticketing".
+    ticketing:
+      rule: "PathPrefix(`/api/tickets`)"
+      service: ticketing
+      priority: 1
+    attachment:
+      rule: "PathRegexp(`^/api/tickets/[0-9]+/attachments`)"
+      service: attachment
+      priority: 100
+    notification:
+      rule: "PathPrefix(`/api/notifications`)"
+      service: notification
+    audit:
+      rule: "PathPrefix(`/api/audit-logs`)"
+      service: audit
+    reporting:
+      rule: "PathPrefix(`/api/dashboard`) || PathPrefix(`/api/reports`)"
+      service: reporting
+    settings:
+      rule: "PathPrefix(`/api/settings`)"
+      service: settings
+
+  services:
+    identity:
+      loadBalancer:
+        servers:
+          - url: "http://identity-service:4001"
+    organization:
+      loadBalancer:
+        servers:
+          - url: "http://organization-service:4002"
+    catalog:
+      loadBalancer:
+        servers:
+          - url: "http://catalog-service:4003"
+    ticketing:
+      loadBalancer:
+        servers:
+          - url: "http://ticketing-service:4004"
+    attachment:
+      loadBalancer:
+        servers:
+          - url: "http://attachment-service:4005"
+    notification:
+      loadBalancer:
+        servers:
+          - url: "http://notification-service:4006"
+    audit:
+      loadBalancer:
+        servers:
+          - url: "http://audit-service:4007"
+    reporting:
+      loadBalancer:
+        servers:
+          - url: "http://reporting-service:4008"
+    settings:
+      loadBalancer:
+        servers:
+          - url: "http://settings-service:4009"
