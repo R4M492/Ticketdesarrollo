@@ -1,0 +1,5032 @@
+{
+	"info": {
+		"name": "HelpDesk API - Contract Tests",
+		"description": "Colección de pruebas de contrato para el backend monolítico de HelpDesk (Node/Express/TypeScript/Prisma). Es la red de seguridad de regresión requerida por el punto 5 del gate de salida antes de migrar a microservicios (ver docs/plan-migracion-microservicios.md, sección 11). Ejecutar de arriba hacia abajo: cada carpeta produce datos (ids) que las siguientes carpetas reutilizan mediante variables de entorno.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "00 - Health",
+			"description": "Chequeo de salud de cada microservicio. No requiere autenticación. Cada request pega directamente al puerto publicado del servicio (ver docker-compose.yml) porque el gateway (Traefik) no expone un /api/health agregado: gateway/traefik/dynamic.yml solo enruta por prefijo de dominio de negocio (/api/auth, /api/tickets, etc.), no hay un router para /api/health. Antes de esta adaptación había un único request contra el monolito (http://localhost:3001/api/health); con microservicios, 'salud del backend' pasó a ser 9 chequeos independientes.",
+			"item": [
+				{
+					"name": "GET Health Check - Identity",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{identityHealthUrl}}",
+							"host": [
+								"{{identityHealthUrl}}"
+							]
+						},
+						"description": "GET /health de identity-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'identity-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('identity-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Health Check - Organization",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{organizationHealthUrl}}",
+							"host": [
+								"{{organizationHealthUrl}}"
+							]
+						},
+						"description": "GET /health de organization-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'organization-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('organization-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Health Check - Catalog",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{catalogHealthUrl}}",
+							"host": [
+								"{{catalogHealthUrl}}"
+							]
+						},
+						"description": "GET /health de catalog-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'catalog-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('catalog-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Health Check - Ticketing",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{ticketingHealthUrl}}",
+							"host": [
+								"{{ticketingHealthUrl}}"
+							]
+						},
+						"description": "GET /health de ticketing-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'ticketing-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('ticketing-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Health Check - Attachment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{attachmentHealthUrl}}",
+							"host": [
+								"{{attachmentHealthUrl}}"
+							]
+						},
+						"description": "GET /health de attachment-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'attachment-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('attachment-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Health Check - Notification",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{notificationHealthUrl}}",
+							"host": [
+								"{{notificationHealthUrl}}"
+							]
+						},
+						"description": "GET /health de notification-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'notification-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('notification-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Health Check - Audit",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{auditHealthUrl}}",
+							"host": [
+								"{{auditHealthUrl}}"
+							]
+						},
+						"description": "GET /health de audit-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'audit-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('audit-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Health Check - Reporting",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{reportingHealthUrl}}",
+							"host": [
+								"{{reportingHealthUrl}}"
+							]
+						},
+						"description": "GET /health de reporting-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'reporting-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('reporting-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Health Check - Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{settingsHealthUrl}}",
+							"host": [
+								"{{settingsHealthUrl}}"
+							]
+						},
+						"description": "GET /health de settings-service, consultado directamente en su puerto (el gateway no expone un /api/health agregado; ver gateway/traefik/dynamic.yml, que solo enruta por dominio de negocio, no health checks)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});",
+									"pm.test(\"El servicio reportado es 'settings-service'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData.service).to.eql('settings-service');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "01 - Auth",
+			"description": "Login del usuario MASTER semilla, perfil propio, recuperación/cambio de contraseña, refresh de token y logins auxiliares (técnico y usuario semilla) para las pruebas negativas de RBAC del resto de la colección.",
+			"item": [
+				{
+					"name": "Login - Credenciales inválidas (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"clave-incorrecta-000\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Caso negativo: contraseña incorrecta → 401 según backend/src/modules/auth/routes.ts."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 401\", function () { pm.response.to.have.status(401); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "Login - MASTER (semilla)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\",\n  \"rememberMe\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Login con el usuario MASTER sembrado por prisma/seed.ts (jefe.soporte@empresa.com). El access token va en el body de la respuesta (campo 'token') y se usa como 'Authorization: Bearer {{accessToken}}' en el resto de la colección — ver backend/src/middleware/auth.ts. El refresh token se entrega como cookie httpOnly 'refresh_token' (ver setRefreshCookie en auth/routes.ts); Postman/Newman la conservan en su cookie jar automáticamente durante la corrida, por eso /auth/refresh y /auth/logout funcionan sin enviarla manualmente."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Login exitoso y token presente\", function () {\n  pm.response.to.have.status(200);\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.expect(jsonData).to.have.property('user');\n  pm.environment.set('accessToken', jsonData.token);\n});",
+									"pm.test(\"Guarda masterUserId\", function () {\n  const jsonData = pm.response.json();\n  pm.environment.set('masterUserId', jsonData.user.id);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Me (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'email'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('email');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Profile (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"555-9999\",\n  \"position\": \"Jefe de Soporte Técnico (QA)\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Forgot Password (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/forgot-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"forgot-password"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "En producción no se revela si el correo existe y no se devuelve token (se enviaría por correo). En desarrollo (NODE_ENV !== production) la respuesta incluye 'devResetToken' para poder probar el flujo completo sin un servicio de correo real."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"Guarda devResetToken (solo entorno de desarrollo)\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok', true);\n  if (jsonData.devResetToken) { pm.environment.set('resetToken', jsonData.devResetToken); }\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Reset Password (Admin → temporal)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/reset-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"reset-password"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"password\": \"{{tempAdminPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Usa el devResetToken capturado en 'Forgot Password'. Cambia la contraseña del MASTER a {{tempAdminPassword}}. Se revierte más abajo con 'PUT Password (revertir)' para que la colección sea re-ejecutable con las mismas credenciales semilla."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "Login - MASTER (con contraseña temporal)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{tempAdminPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Confirma que el reset-password anterior surtió efecto y refresca accessToken."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Login exitoso y token presente\", function () {\n  pm.response.to.have.status(200);\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.expect(jsonData).to.have.property('user');\n  pm.environment.set('accessToken', jsonData.token);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Password (revertir a la contraseña semilla)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"password"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"{{tempAdminPassword}}\",\n  \"newPassword\": \"{{adminPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Revierte la contraseña del MASTER a {{adminPassword}} (debe coincidir con SEED_ADMIN_PASSWORD del .env) para que la colección pueda re-ejecutarse de principio a fin sin dejar el usuario semilla en un estado distinto."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "Login - MASTER (restaurar sesión final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\",\n  \"rememberMe\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Re-login con las credenciales originales; deja accessToken listo para el resto de la colección."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Login exitoso y token presente\", function () {\n  pm.response.to.have.status(200);\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.expect(jsonData).to.have.property('user');\n  pm.environment.set('accessToken', jsonData.token);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Usa la cookie httpOnly 'refresh_token' emitida por el login anterior (cookie jar de Postman/Newman). No requiere header Authorization ni body."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"Rota el accessToken\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.environment.set('accessToken', jsonData.token);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Me - Sin token (negativo)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "",
+								"type": "text",
+								"disabled": false
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Caso negativo: sin header Authorization → 401 (middleware/auth.ts)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 401\", function () { pm.response.to.have.status(401); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "Login - Técnico semilla (para pruebas RBAC)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{seedTechEmail}}\",\n  \"password\": \"{{seedTechPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Cuenta TECNICO sembrada (carlos.tec@empresa.com) usada solo para casos negativos de RBAC en otras carpetas, sin depender de los técnicos creados más adelante en 'Users'."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Login exitoso y token presente\", function () {\n  pm.response.to.have.status(200);\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.environment.set('seedTechToken', jsonData.token);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "Login - Usuario semilla (para pruebas RBAC)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{seedUserEmail}}\",\n  \"password\": \"{{seedUserPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Cuenta USUARIO sembrada (maria.usuario@empresa.com) usada solo para casos negativos de RBAC."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Login exitoso y token presente\", function () {\n  pm.response.to.have.status(200);\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.environment.set('seedUserToken', jsonData.token);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Revoca el refresh token (cookie) de la última sesión (MASTER). El accessToken JWT ya emitido sigue siendo válido hasta su expiración (ACCESS_TOKEN_MINUTES) porque es stateless, así que el resto de la colección sigue funcionando con {{accessToken}}."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "02 - Companies",
+			"description": "Catálogo de empresas. companyId se usa luego en Departments y Users.",
+			"item": [
+				{
+					"name": "POST Crear Empresa (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"companies"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Empresa QA Contract Tests\",\n  \"description\": \"Empresa creada por la colección de pruebas de contrato\",\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda companyId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('companyId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Empresas",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"companies"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Departamentos de la Empresa",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/{{companyId}}/departments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"companies",
+								"{{companyId}}",
+								"departments"
+							]
+						},
+						"description": "Antes de crear departamentos (carpeta 03) esta lista debería venir vacía."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Actualizar Empresa (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies/{{companyId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"companies",
+								"{{companyId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Empresa QA — actualizada por contract tests\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Empresa - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{seedUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/companies",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"companies"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Empresa no autorizada\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Caso negativo RBAC: un USUARIO no puede crear empresas (requireRole(ROLES.MASTER))."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "03 - Departments",
+			"description": "Depende de companyId (carpeta 02). departmentId se usa luego en Users.",
+			"item": [
+				{
+					"name": "POST Crear Departamento (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/departments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"departments"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": {{companyId}},\n  \"name\": \"Soporte TI - QA\",\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda departmentId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('departmentId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Departamentos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/departments?companyId={{companyId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"departments"
+							],
+							"query": [
+								{
+									"key": "companyId",
+									"value": "{{companyId}}"
+								}
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Actualizar Departamento (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/departments/{{departmentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"departments",
+								"{{departmentId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Soporte TI - QA (actualizado)\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Departamento - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{seedTechToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/departments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"departments"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyId\": {{companyId}},\n  \"name\": \"Departamento no autorizado\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "04 - Categories & Subcategories",
+			"description": "categoryId y subcategoryId se usan al crear tickets (carpeta 08). DELETE se omite aquí a propósito (ver README) porque el ticket creado en la carpeta 08 referencia estos ids y un DELETE dejaría la re-ejecución inconsistente; se cubre igualmente el código de eliminación con Priorities y Statuses/Departments/Companies más abajo.",
+			"item": [
+				{
+					"name": "POST Crear Categoría (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"categories"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Categoría QA\",\n  \"description\": \"Categoría creada por contract tests\",\n  \"sortOrder\": 100\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda categoryId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('categoryId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Categorías",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"categories"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Actualizar Categoría (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/categories/{{categoryId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"categories",
+								"{{categoryId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Categoría QA (actualizada)\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Subcategoría (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/categories/subcategories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"categories",
+								"subcategories"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"categoryId\": {{categoryId}},\n  \"name\": \"Subcategoría QA\",\n  \"sortOrder\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda subcategoryId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('subcategoryId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Subcategorías de la Categoría",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/categories/{{categoryId}}/subcategories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"categories",
+								"{{categoryId}}",
+								"subcategories"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Actualizar Subcategoría (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/categories/subcategories/{{subcategoryId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"categories",
+								"subcategories",
+								"{{subcategoryId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Subcategoría QA (actualizada)\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Categoría - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{seedUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"categories"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Categoría no autorizada\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "05 - Priorities",
+			"description": "priorityId se usa al crear tickets (carpeta 08). El SLA configurado aquí determina slaResponseDueAt/slaResolutionDueAt.",
+			"item": [
+				{
+					"name": "POST Crear Prioridad (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/priorities",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"priorities"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"QA_TEST\",\n  \"name\": \"QA Test\",\n  \"description\": \"Prioridad creada por contract tests\",\n  \"color\": \"#123456\",\n  \"sortOrder\": 100\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda priorityId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('priorityId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Prioridades (con SLA)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/priorities",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"priorities"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Actualizar Prioridad (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/priorities/{{priorityId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"priorities",
+								"{{priorityId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"QA Test (actualizada)\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Configurar SLA de la Prioridad (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/priorities/{{priorityId}}/sla",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"priorities",
+								"{{priorityId}}",
+								"sla"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"responseMinutes\": 30,\n  \"resolutionHours\": 8,\n  \"active\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Necesario para que el ticket creado en la carpeta 08 obtenga slaResponseDueAt/slaResolutionDueAt."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'responseMinutes'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('responseMinutes');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET SLA de la Prioridad",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/priorities/{{priorityId}}/sla",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"priorities",
+								"{{priorityId}}",
+								"sla"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "DELETE Prioridad de prueba (MASTER)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/priorities/{{priorityId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"priorities",
+								"{{priorityId}}"
+							]
+						},
+						"description": "IMPORTANTE: esta petición está deshabilitada por defecto (ver 'disabled' en el request) porque priorityId se reutiliza al crear el ticket en la carpeta 08 (que se ejecuta después). Habilítala manualmente solo si vas a correr la carpeta Priorities de forma aislada.\n\nLimitación conocida y fuera de alcance de esta adaptación al gateway (ver el punto 2 del plan de migración, 'Brechas de validación cross-servicio'): catalog-service ya no valida si la prioridad tiene tickets o SLA asociados antes de borrar (services/catalog-service/src/modules/priorities/routes.ts, DELETE /:id, sin chequeo de ticketsCount ni de SlaConfiguration). Como esta prioridad sí tiene SLA configurado (ver 'PUT Configurar SLA de la Prioridad' arriba en esta misma carpeta), el borrado choca con la restricción de llave foránea 1:1 y Prisma dispara P2003, que el errorHandler compartido traduce a 409 (en el monolito original caía a un 500 genérico; aquí al menos no es un crash, pero tampoco borra ni desactiva con gracia). Este request documenta el comportamiento real tal cual es hoy, no lo oculta ni lo arregla."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 409 (limitación conocida: no valida SLA asociado antes de borrar)\", function () { pm.response.to.have.status(409); });",
+									"pm.test(\"La respuesta reporta el conflicto\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('error');\n});"
+								]
+							},
+							"packages": {}
+						}
+					],
+					"disabled": true
+				}
+			]
+		},
+		{
+			"name": "06 - Statuses",
+			"description": "Catálogo de estados de ticket. No existe endpoint DELETE para statuses en el backend real.",
+			"item": [
+				{
+					"name": "POST Crear Estado personalizado (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/statuses",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"statuses"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"QA_REVISION\",\n  \"name\": \"En revisión QA\",\n  \"color\": \"#654321\",\n  \"sortOrder\": 100,\n  \"isClosed\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Este estado personalizado NO participa en las transiciones válidas de tickets (ALLOWED_TRANSITIONS está codificado en backend/src/modules/tickets/helpers.ts por código NUEVO/ASIGNADO/etc.), así que el flujo de tickets sigue usando los estados sembrados por prisma/seed.ts. Solo sirve para cubrir el CRUD del catálogo."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda customStatusId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('customStatusId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Estados",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/statuses",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"statuses"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Actualizar Estado (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/statuses/{{customStatusId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"statuses",
+								"{{customStatusId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"En revisión QA (actualizado)\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Estado - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{seedTechToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/statuses",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"statuses"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"NO_AUTORIZADO\",\n  \"name\": \"No autorizado\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "07 - Users",
+			"description": "Crea 2 técnicos y 1 usuario final (usando companyId/departmentId de las carpetas 02-03) y guarda sus tokens (technicianToken, technician2Token, finalUserToken) para el flujo completo de Tickets.",
+			"item": [
+				{
+					"name": "POST Crear Técnico 1 (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Técnico QA Uno\",\n  \"email\": \"tecnico.qa1.contract@empresa.com\",\n  \"password\": \"TecnicoQA123!\",\n  \"roleCode\": \"TECNICO\",\n  \"companyId\": {{companyId}},\n  \"departmentId\": {{departmentId}},\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda technicianId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('technicianId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Técnico 2 (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Técnico QA Dos\",\n  \"email\": \"tecnico.qa2.contract@empresa.com\",\n  \"password\": \"TecnicoQA123!\",\n  \"roleCode\": \"TECNICO\",\n  \"companyId\": {{companyId}},\n  \"departmentId\": {{departmentId}},\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda technician2Id en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('technician2Id', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Usuario Final (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Usuario Final QA\",\n  \"email\": \"usuario.qa.contract@empresa.com\",\n  \"password\": \"UsuarioQA123!\",\n  \"roleCode\": \"USUARIO\",\n  \"companyId\": {{companyId}},\n  \"departmentId\": {{departmentId}},\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda finalUserId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('finalUserId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Usuarios (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users?page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'data'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('data');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Técnicos activos (para asignación)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/technicians",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"technicians"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Detalle de Usuario",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{finalUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"{{finalUserId}}"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'email'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('email');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Actualizar Usuario (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{finalUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"{{finalUserId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"position\": \"Analista QA\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PATCH Cambiar Estado de Usuario (MASTER)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{technician2Id}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"{{technician2Id}}",
+								"status"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Restablecer Contraseña de Usuario (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{finalUserId}}/reset-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"{{finalUserId}}",
+								"reset-password"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"password\": \"UsuarioQA123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Se reestablece a la misma contraseña original para no romper los logins posteriores de la colección."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "Login - Técnico QA 1",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"tecnico.qa1.contract@empresa.com\",\n  \"password\": \"TecnicoQA123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Login exitoso y token presente\", function () {\n  pm.response.to.have.status(200);\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.environment.set('technicianToken', jsonData.token);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "Login - Técnico QA 2",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"tecnico.qa2.contract@empresa.com\",\n  \"password\": \"TecnicoQA123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Login exitoso y token presente\", function () {\n  pm.response.to.have.status(200);\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.environment.set('technician2Token', jsonData.token);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "Login - Usuario Final QA",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"usuario.qa.contract@empresa.com\",\n  \"password\": \"UsuarioQA123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Login exitoso y token presente\", function () {\n  pm.response.to.have.status(200);\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('token');\n  pm.environment.set('finalUserToken', jsonData.token);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Usuarios - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{seedUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						},
+						"description": "Todo el router de users tiene requireRole(ROLES.MASTER) global (usersRouter.use(...))."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "08 - Tickets",
+			"description": "El módulo más grande: creación (multipart), listado, detalle, edición, comentarios/adjuntos, historial, asignación/reasignación, cambios de estado con transiciones validadas, resolución, confirmación, reapertura, cancelación y exportación. Requiere categoryId/subcategoryId/priorityId (04-05) y technicianId/technician2Id/finalUserId + sus tokens (07).",
+			"item": [
+				{
+					"name": "POST Crear Ticket - Payload inválido (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subject\": \"a\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Caso negativo: 'subject' con menos de 3 caracteres y faltan categoryId/priorityId/description → 400."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 400\", function () { pm.response.to.have.status(400); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Ticket 1 (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subject\": \"No enciende la computadora\",\n  \"categoryId\": {{categoryId}},\n  \"subcategoryId\": {{subcategoryId}},\n  \"priorityId\": {{priorityId}},\n  \"description\": \"La computadora de escritorio no enciende desde esta mañana.\",\n  \"location\": \"Piso 2, cubículo 5\",\n  \"device\": \"Desktop Dell OptiPlex\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "JSON (no multipart): en la arquitectura de microservicios, ticketing-service crea el ticket sin adjuntos (ver services/ticketing-service/src/modules/tickets/routes.ts, comentario de cabecera del router — Fase 7 dejó los adjuntos fuera de esta llamada a propósito). Los adjuntos se suben después con una llamada aparte a attachment-service, ver 'POST Subir Adjuntos sueltos'."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda ticketId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('ticketId', value);\n});",
+									"pm.test(\"Guarda ticketNumber en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.ticketNumber;\n  pm.expect(value, \"esperaba .ticketNumber en la respuesta\").to.not.be.undefined;\n  pm.environment.set('ticketNumber', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Crear Ticket 2 - Para cancelar (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subject\": \"Impresora no responde\",\n  \"categoryId\": {{categoryId}},\n  \"subcategoryId\": {{subcategoryId}},\n  \"priorityId\": {{priorityId}},\n  \"description\": \"La impresora del departamento dejó de responder a los trabajos de impresión.\",\n  \"location\": \"Piso 3, recepción\",\n  \"device\": \"HP LaserJet Pro\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda ticketToCancelId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('ticketToCancelId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Tickets (Usuario Final, alcance propio)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets?page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'data'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('data');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Listar Tickets (MASTER, todos)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets?page=1&pageSize=20&sortBy=createdAt&sortDir=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt"
+								},
+								{
+									"key": "sortDir",
+									"value": "desc"
+								}
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'data'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('data');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Detalle de Ticket",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ticketNumber'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ticketNumber');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Detalle de Ticket - Acceso denegado (negativo)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{seedUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}"
+							]
+						},
+						"description": "Caso negativo: un USUARIO ajeno al ticket (no es el solicitante) no puede verlo (canAccessTicket)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PATCH Editar Ticket (Usuario Final)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subject\": \"No enciende la computadora (actualizado)\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Comentar Ticket (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/comments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"comments"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"comment\": \"¿Hay alguna actualización sobre mi ticket?\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda commentId en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('commentId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Comentar Ticket - previo a adjuntar (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/comments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"comments"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"comment\": \"Adjunto una captura del error.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "JSON: ticketing-service ya no acepta adjuntos en la misma llamada del comentario (ver services/attachment-service/src/modules/attachments/routes.ts — comentario de cabecera: 'el monolito aceptaba adjuntos en la misma petición... aquí es un paso separado'). El archivo se sube después con 'commentId' a attachment-service, ver el siguiente request."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});",
+									"pm.test(\"Guarda commentId (para el adjunto) en el entorno\", function () {\n  const jsonData = pm.response.json();\n  const value = jsonData.id;\n  pm.expect(value, \"esperaba .id en la respuesta\").to.not.be.undefined;\n  pm.environment.set('commentId', value);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Adjuntar Archivo al Comentario (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/attachments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"attachments"
+							]
+						},
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"src": "tests/contract/fixtures/sample-attachment.txt"
+								},
+								{
+									"key": "commentId",
+									"value": "{{commentId}}",
+									"type": "text"
+								}
+							]
+						},
+						"description": "Sube el archivo a attachment-service (puerto directo 4005 vía gateway, PathRegexp `^/api/tickets/[0-9]+/attachments`) ligado al comentario creado en el request anterior mediante el campo 'commentId' del form-data (ver attachment-service/src/modules/attachments/routes.ts, POST /:id/attachments). Misma nota sobre rutas relativas de Newman que 'POST Subir Adjuntos sueltos'."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"La respuesta es un arreglo con el adjunto creado\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array').that.is.not.empty;\n  pm.expect(jsonData[0]).to.have.property('id');\n});",
+									"pm.test(\"El adjunto queda vinculado al commentId\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(String(jsonData[0].commentId)).to.eql(String(pm.environment.get('commentId')));\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Subir Adjuntos sueltos (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/attachments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"attachments"
+							]
+						},
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"src": "tests/contract/fixtures/sample-attachment.txt"
+								}
+							]
+						},
+						"description": "Ver la misma nota sobre rutas relativas de archivos en Newman que en 'POST Comentar con adjunto'."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 201\", function () { pm.response.to.have.status(201); });",
+									"pm.test(\"Guarda attachmentId del primer archivo creado\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array').that.is.not.empty;\n  pm.environment.set('attachmentId', jsonData[0].id);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Descargar Adjunto",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/attachments/{{attachmentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"attachments",
+								"{{attachmentId}}"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Historial del Ticket",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/history",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"history"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Asignar Ticket a Técnico 1 (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/assign",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"assign"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"technicianId\": {{technicianId}},\n  \"reason\": \"Asignación inicial de prueba\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Asignar Ticket - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technicianToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketToCancelId}}/assign",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketToCancelId}}",
+								"assign"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"technicianId\": {{technicianId}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Cambiar Estado - Solicitante intenta (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"status"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"EN_PROCESO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "El solicitante (rol USUARIO) no puede cambiar estados directamente."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Cambiar Estado a EN_PROCESO (Técnico 1 asignado)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technicianToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"status"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"EN_PROCESO\",\n  \"comment\": \"Iniciando diagnóstico\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Reasignar Ticket a Técnico 2 (MASTER)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/reassign",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"reassign"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"technicianId\": {{technician2Id}},\n  \"reason\": \"Balanceo de carga de prueba\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Cambiar Estado a EN_PROCESO (Técnico 2 asignado)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technician2Token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"status"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"EN_PROCESO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Resolver Ticket - Técnico no asignado (negativo)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technicianToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/resolve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"resolve"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"problemIdentified\": \"Problema de prueba\",\n  \"solutionApplied\": \"Solucion de prueba\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Técnico 1 ya no es el técnico asignado (se reasignó a Técnico 2) → 403."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Resolver Ticket (Técnico 2 asignado)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technician2Token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/resolve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"resolve"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"problemIdentified\": \"Fuente de poder dañada\",\n  \"cause\": \"Desgaste por uso prolongado\",\n  \"solutionApplied\": \"Se reemplazó la fuente de poder por una nueva\",\n  \"observations\": \"Se recomienda dar mantenimiento preventivo cada 6 meses\",\n  \"timeUsedMinutes\": 45\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'solution'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('solution');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Confirmar Solución (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/confirm",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"confirm"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Reabrir Ticket (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketId}}/reopen",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketId}}",
+								"reopen"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"El problema volvió a presentarse esta mañana\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Cancelar Ticket 2 (Usuario Final)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{ticketToCancelId}}/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{ticketToCancelId}}",
+								"cancel"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'id'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('id');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Exportar Tickets a CSV (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/export",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"export"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Exportar Tickets - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tickets/export",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"export"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "09 - Notifications",
+			"description": "Usa technician2Token porque el Técnico 2 recibió notificaciones de asignación/reasignación durante el flujo de Tickets.",
+			"item": [
+				{
+					"name": "GET Listar Notificaciones (Técnico 2)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technician2Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications?page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Técnico 2 debería tener notificaciones de asignación/estado generadas durante el flujo de Tickets."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'data'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('data');\n});",
+									"pm.test(\"Guarda notificationId desde el primer elemento de .data\", function () {\n  const jsonData = pm.response.json();\n  const arr = jsonData.data;\n  if (Array.isArray(arr) && arr.length > 0) {\n    pm.environment.set('notificationId', arr[0].id);\n  }\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Contador de No Leídas (Técnico 2)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technician2Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/unread-count",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"unread-count"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'count'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('count');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Marcar Notificación como Leída (Técnico 2)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technician2Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"{{notificationId}}",
+								"read"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "POST Marcar Todas como Leídas (Técnico 2)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technician2Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/read-all",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"read-all"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'ok'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('ok');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "10 - Dashboard",
+			"description": "Indicadores agregados; todos requieren solo autenticación (no MASTER-only), con alcance según rol.",
+			"item": [
+				{
+					"name": "GET Resumen (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/summary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"dashboard",
+								"summary"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'total'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('total');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Por Estado (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/by-status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"dashboard",
+								"by-status"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Por Prioridad (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/by-priority",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"dashboard",
+								"by-priority"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Por Categoría (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/by-category",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"dashboard",
+								"by-category"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Por Técnico (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/by-technician",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"dashboard",
+								"by-technician"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Por Día - últimos 14 días (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/per-day",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"dashboard",
+								"per-day"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Tiempo Promedio de Resolución - 6 meses (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/avg-resolution",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"dashboard",
+								"avg-resolution"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Resumen (Usuario Final, alcance propio)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/dashboard/summary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"dashboard",
+								"summary"
+							]
+						},
+						"description": "Cubre el filtro de alcance por rol (scopeFilter) para USUARIO."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'total'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('total');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "11 - Reports",
+			"description": "Todos los endpoints son MASTER-only (reportsRouter.use(authenticate, requireRole(ROLES.MASTER))).",
+			"item": [
+				{
+					"name": "GET Reporte de Tickets (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reports",
+								"tickets"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'rows'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('rows');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Reporte de Productividad (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/productivity",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reports",
+								"productivity"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Reporte de SLA (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/sla",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reports",
+								"sla"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Reporte por Empresa (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/companies",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reports",
+								"companies"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Exportar Reporte a CSV (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/export",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reports",
+								"export"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Reporte de Tickets - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technician2Token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reports/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reports",
+								"tickets"
+							]
+						},
+						"description": "Todo el router reports tiene requireRole(ROLES.MASTER) global."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "12 - Audit",
+			"description": "Nótese que app.ts monta este router en /api/audit-logs (no /api/audit).",
+			"item": [
+				{
+					"name": "GET Listar Bitácora de Auditoría (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/audit-logs?page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"audit-logs"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'data'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('data');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Acciones de Auditoría disponibles (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/audit-logs/actions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"audit-logs",
+								"actions"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta es un arreglo\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.be.an('array');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "GET Bitácora - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{finalUserToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/audit-logs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"audit-logs"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "13 - Settings",
+			"description": "Configuración global del sistema (clave/valor). Se revierte al final para no dejar residuos entre corridas.",
+			"item": [
+				{
+					"name": "GET Configuración del Sistema (MASTER)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/settings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"settings"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"Guarda los valores originales para poder revertir\", function () {\n  const jsonData = pm.response.json();\n  pm.environment.set('settingsOriginalSystemName', jsonData.systemName);\n  pm.environment.set('settingsOriginalSlaWarningPercent', jsonData.slaWarningPercent);\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Actualizar Configuración (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/settings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"settings"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"systemName\": \"HelpDesk QA — Contract Tests\",\n  \"slaWarningPercent\": 85\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'systemName'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('systemName');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Revertir Configuración (MASTER)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/settings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"settings"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"systemName\": \"{{settingsOriginalSystemName}}\",\n  \"slaWarningPercent\": {{settingsOriginalSlaWarningPercent}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Revierte a los valores originales capturados en el GET inicial para mantener la colección re-ejecutable."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 200\", function () { pm.response.to.have.status(200); });",
+									"pm.test(\"La respuesta tiene la propiedad 'systemName'\", function () {\n  const jsonData = pm.response.json();\n  pm.expect(jsonData).to.have.property('systemName');\n});"
+								]
+							},
+							"packages": {}
+						}
+					]
+				},
+				{
+					"name": "PUT Configuración - Sin rol MASTER (negativo)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{seedTechToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/settings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"settings"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"systemName\": \"No autorizado\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code es 403\", function () { pm.response.to.have.status(403); });"
+								]
+							},
+							"packages": {}
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": []
+}
