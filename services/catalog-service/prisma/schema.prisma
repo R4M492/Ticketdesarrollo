@@ -1,0 +1,84 @@
+// catalog-service — categorías, subcategorías, prioridades, estados y configuración de SLA.
+//
+// Adaptado desde backend/prisma/schema.prisma: se preservan TicketCategory, TicketSubcategory,
+// TicketPriority, TicketStatus y SlaConfiguration completos (todas sus relaciones internas se
+// mantienen, viven en el mismo servicio). Se elimina la relación @relation hacia Ticket
+// (ticketing-service) y hacia User en SlaConfiguration.updatedBy (identity-service): quedan
+// como IDs sueltos sin FK real.
+
+generator client {
+  provider = "prisma-client-js"
+  // Salida propia (no compartida) para evitar que el hoisting de npm workspaces haga que
+  // el @prisma/client generado de un servicio sobrescriba el de otro en node_modules raíz.
+  output   = "../node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model TicketCategory {
+  id            Int                 @id @default(autoincrement())
+  name          String              @unique
+  description   String?
+  sortOrder     Int                 @default(0)
+  status        String              @default("ACTIVE")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  subcategories TicketSubcategory[]
+}
+
+model TicketSubcategory {
+  id         Int            @id @default(autoincrement())
+  categoryId Int
+  category   TicketCategory @relation(fields: [categoryId], references: [id])
+  name       String
+  sortOrder  Int            @default(0)
+  status     String         @default("ACTIVE")
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([categoryId, name])
+}
+
+model TicketPriority {
+  id          Int               @id @default(autoincrement())
+  code        String            @unique // CRITICA | ALTA | MEDIA | BAJA
+  name        String
+  description String?
+  color       String            @default("#64748b")
+  sortOrder   Int               @default(0)
+  status      String            @default("ACTIVE")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  sla         SlaConfiguration?
+}
+
+model TicketStatus {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // NUEVO | PENDIENTE_ASIGNACION | ASIGNADO | EN_PROCESO | ESPERA_USUARIO | RESUELTO | CERRADO | REABIERTO | CANCELADO
+  name        String
+  description String?
+  color       String   @default("#64748b")
+  sortOrder   Int      @default(0)
+  isClosed    Boolean  @default(false)
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SlaConfiguration {
+  id              Int            @id @default(autoincrement())
+  priorityId      Int            @unique
+  priority        TicketPriority @relation(fields: [priorityId], references: [id])
+  responseMinutes Int
+  resolutionHours Int
+  active          Boolean        @default(true)
+
+  // Referencia débil a identity-service (quién actualizó el SLA), sin @relation ni FK real.
+  updatedById Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
