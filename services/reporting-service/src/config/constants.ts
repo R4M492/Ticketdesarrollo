@@ -1,0 +1,7 @@
+export const ROLES = {
+  MASTER: "MASTER",
+  TECNICO: "TECNICO",
+  USUARIO: "USUARIO",
+} as const;
+
+export const OPEN_STATUSES: string[] = ["NUEVO", "PENDIENTE_ASIGNACION", "ASIGNADO", "EN_PROCESO", "ESPERA_USUARIO", "REABIERTO"];
