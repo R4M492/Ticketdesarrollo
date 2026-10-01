@@ -1,0 +1,11 @@
+export { HttpError } from "./http-error.js";
+export { errorHandler, notFound } from "./error-handler.js";
+export { validate } from "./validate.js";
+export { authenticate, signAccessToken } from "./auth.js";
+export type { AccessTokenPayload } from "./auth.js";
+export { requireRole } from "./rbac.js";
+export { healthCheck } from "./health.js";
+export { publishEvent, consumeEvents } from "./events.js";
+export type { DomainEvent } from "./events.js";
+export { publishAuditEvent } from "./audit-event.js";
+export type { AuditEventPayload } from "./audit-event.js";
