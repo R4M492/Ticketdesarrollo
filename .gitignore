@@ -15,10 +15,6 @@ build/
 *.db-journal
 prisma/dev.db*
 
-# Uploads (archivos adjuntos subidos por usuarios)
-backend/uploads/*
-!backend/uploads/.gitkeep
-
 # Logs
 *.log
 npm-debug.log*

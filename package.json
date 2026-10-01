@@ -4,18 +4,19 @@
   "version": "1.0.0",
   "description": "Sistema web de gestión de tickets / Help Desk para soporte técnico",
   "workspaces": [
-    "backend",
-    "frontend"
+    "frontend",
+    "packages/*",
+    "services/*"
   ],
   "scripts": {
-    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev -w backend\" \"npm run dev -w frontend\"",
-    "dev:backend": "npm run dev -w backend",
+    "dev": "docker compose up --build",
     "dev:frontend": "npm run dev -w frontend",
-    "build": "npm run build -w backend && npm run build -w frontend",
-    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend",
-    "db:migrate": "npm run db:migrate -w backend",
-    "db:seed": "npm run db:seed -w backend",
-    "db:reset": "npm run db:reset -w backend"
+    "services:dev": "concurrently -n identity,organization,catalog,ticketing,attachment,notification,audit,reporting,settings -c blue,green,yellow,magenta,cyan,white,red,blackBright,blueBright \"npm run dev -w services/identity-service\" \"npm run dev -w services/organization-service\" \"npm run dev -w services/catalog-service\" \"npm run dev -w services/ticketing-service\" \"npm run dev -w services/attachment-service\" \"npm run dev -w services/notification-service\" \"npm run dev -w services/audit-service\" \"npm run dev -w services/reporting-service\" \"npm run dev -w services/settings-service\"",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "npm run db:generate -w services/identity-service && npm run db:generate -w services/organization-service && npm run db:generate -w services/catalog-service && npm run db:generate -w services/ticketing-service",
+    "db:push": "npm run db:push -w services/identity-service && npm run db:push -w services/organization-service && npm run db:push -w services/catalog-service && npm run db:push -w services/ticketing-service",
+    "db:seed": "npm run db:seed -w services/identity-service && npm run db:seed -w services/organization-service && npm run db:seed -w services/catalog-service"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
