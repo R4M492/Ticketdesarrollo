@@ -10,18 +10,92 @@ punto 1 del README de [`tests/contract/`](tests/contract/README.md) y la secció
 fase por fase del proceso). No queda código del monolito en el repositorio — solo referencias
 históricas en comentarios, que documentan de qué módulo original se adaptó cada pieza.
 
-**Cómo correrlo:**
+## 🚀 Puesta en marcha
+
+Todo el sistema (9 microservicios, bases de datos, cola de mensajes, gateway y frontend) se levanta
+con un solo comando usando Docker. No hace falta instalar Node, MySQL, MongoDB ni nada más en tu
+máquina — Docker se encarga de todo.
+
+### 1. Instala Docker Desktop
+
+Si no lo tienes, descárgalo de [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)
+e instálalo. Después de instalarlo, **ábrelo** (debe quedar corriendo en segundo plano — lo ves en
+la barra de menú/bandeja del sistema) antes de seguir con el siguiente paso.
+
+### 2. Clona el proyecto y entra a la carpeta
+
+```bash
+git clone https://github.com/R4M492/Ticketdesarrollo.git
+cd Ticketdesarrollo
+```
+
+(Si ya tienes el proyecto en tu máquina, solo entra a la carpeta con `cd`.)
+
+### 3. Levanta todo con un comando
 
 ```bash
 docker compose up --build
-# o npm run dev (hace exactamente lo mismo)
 ```
 
-Levanta los 9 microservicios (`identity`, `organization`, `catalog`, `ticketing`, `attachment`,
-`notification`, `audit`, `reporting`, `settings`), MySQL, MongoDB, RabbitMQ, el API Gateway
-(Traefik) y el frontend. El frontend queda en http://localhost:5174, hablando únicamente con el
-gateway (`http://gateway:80` dentro de la red de Docker) — ningún servicio ni el frontend conocen
-un "backend" monolítico.
+La primera vez tarda varios minutos (Docker descarga las imágenes base y construye cada servicio).
+Vas a ver mucho texto en la terminal — es normal, es el log de los 16 contenedores arrancando a la
+vez. Espera a que el texto se calme y empieces a ver líneas repetidas tipo `GET /health 200` o
+`Server listening on port...`; eso significa que ya está todo arriba. Las siguientes veces que lo
+corras será mucho más rápido porque Docker reutiliza lo que ya construyó.
+
+Si prefieres recuperar la terminal y dejarlo corriendo de fondo, usa `docker compose up --build -d`
+(la `-d` es "detached"). Para ver los logs después: `docker compose logs -f`.
+
+### 4. Confirma que todo esté levantado
+
+En otra terminal (o la misma, si usaste `-d`):
+
+```bash
+docker compose ps
+```
+
+Deberías ver 16 contenedores con `Up` en la columna de estado, y la mayoría diciendo `(healthy)`.
+Si alguno dice `(unhealthy)` o `Restarting`, dale uno o dos minutos más — algunos servicios esperan
+a que la base de datos esté lista antes de arrancar.
+
+### 5. Abre la aplicación
+
+Entra a **http://localhost:5174** en tu navegador. Para iniciar sesión, usa cualquiera de las
+cuentas de prueba que ya vienen cargadas:
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Jefe de soporte (MASTER) | `jefe.soporte@empresa.com` | `Admin123!` |
+| Técnico | `carlos.tec@empresa.com` | `Tecnico123!` |
+| Usuario final | `maria.usuario@empresa.com` | `Usuario123!` |
+
+### 6. Para apagarlo
+
+Con `Ctrl+C` en la terminal donde corre (si no usaste `-d`), o:
+
+```bash
+docker compose down
+```
+
+Esto apaga los contenedores pero conserva los datos (usuarios, tickets, etc. siguen ahí la próxima
+vez que lo levantes). Si quieres empezar desde cero y borrar también los datos:
+
+```bash
+docker compose down -v
+```
+
+### Problemas comunes
+
+- **"El puerto ya está en uso" / `address already in use`** — algo más en tu máquina está usando ese
+  puerto. El más probable es el **80** (lo usa el gateway); ciérralo o, si no puedes, cambia el
+  mapeo de puertos de `gateway` en `docker-compose.yml` (por ejemplo `"8080:80"` en vez de
+  `"80:80"`, y entra por `http://localhost:8080` en tu navegador).
+- **Docker no arranca nada / error de conexión al demonio** — Docker Desktop no está corriendo.
+  Ábrelo y espera a que el ícono indique que está listo antes de repetir `docker compose up`.
+- **Algún servicio queda en `Restarting` mucho tiempo** — revisa su log puntual con
+  `docker compose logs <nombre-del-servicio>` (por ejemplo `docker compose logs identity-service`).
+
+### Para desarrollar (no solo para probar)
 
 Para desarrollar un servicio individual fuera de Docker (hot reload sin reconstruir la imagen):
 
