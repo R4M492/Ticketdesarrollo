@@ -1,0 +1,155 @@
+// ticketing-service — núcleo del ciclo de vida de tickets.
+//
+// Adaptado desde backend/prisma/schema.prisma. Cambios respecto al monolito original:
+//
+// 1) Todas las relaciones @relation hacia modelos que ahora viven en otros servicios
+//    (User → identity-service; TicketCategory/TicketSubcategory/TicketPriority/TicketStatus →
+//    catalog-service; Company/Department → organization-service) se convierten en IDs sueltos
+//    sin FK real. La validación de que esos IDs existan se hace por llamada HTTP a los
+//    servicios dueños al crear/actualizar un ticket (ver plan de migración, sección 4.3).
+// 2) TicketAttachment se elimina de este esquema por completo: sus metadatos pasan a vivir en
+//    attachment-service (MongoDB), referenciando ticketId/commentId como valores sueltos.
+// 3) Notification se elimina de este esquema: notification-service (MongoDB) la posee.
+//
+// Todo lo demás (Ticket, TicketComment, TicketHistory, TicketAssignment, TicketSolution y sus
+// relaciones ENTRE SÍ) se preserva igual, porque son parte del mismo servicio.
+
+generator client {
+  provider = "prisma-client-js"
+  // Salida propia (no compartida) para evitar que el hoisting de npm workspaces haga que
+  // el @prisma/client generado de un servicio sobrescriba el de otro en node_modules raíz.
+  output   = "../node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Ticket {
+  id           Int    @id @default(autoincrement())
+  ticketNumber String @unique // TKT-AAAA-NNNNNN
+
+  // Referencia débil a identity-service.
+  userId Int
+
+  subject String
+
+  // Referencias débiles a catalog-service.
+  categoryId    Int
+  subcategoryId Int?
+  priorityId    Int
+  statusId      Int
+
+  description     String
+  location        String?
+  device          String?
+  inventoryNumber String?
+
+  // Instantánea del solicitante al momento de crear el ticket.
+  requesterName  String
+  requesterEmail String
+  requesterPhone String?
+
+  // Referencias débiles a organization-service.
+  companyId    Int?
+  departmentId Int?
+
+  // Referencia débil a identity-service.
+  assignedTechnicianId Int?
+
+  // Fechas de control.
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  reopenedCount   Int       @default(0)
+
+  // SLA (instantánea al crear, tomada de catalog-service en el momento de creación).
+  slaResponseDueAt   DateTime?
+  slaResolutionDueAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments    TicketComment[]
+  histories   TicketHistory[]
+  assignments TicketAssignment[]
+  solutions   TicketSolution[]
+
+  @@index([statusId])
+  @@index([priorityId])
+  @@index([userId])
+  @@index([assignedTechnicianId])
+  @@index([createdAt])
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([ticketNumber])
+  @@index([statusId, createdAt])
+  @@index([userId, statusId])
+  @@index([assignedTechnicianId, statusId])
+}
+
+model TicketComment {
+  id       Int    @id @default(autoincrement())
+  ticketId Int
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  // Referencia débil a identity-service.
+  userId Int
+
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketHistory {
+  id       Int    @id @default(autoincrement())
+  ticketId Int
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  // Referencia débil a identity-service.
+  userId Int?
+
+  action      String // CREATED | ASSIGNED | REASSIGNED | STATUS_CHANGED | PRIORITY_CHANGED | COMMENT_ADDED | RESOLVED | CLOSED | REOPENED | CANCELED | ATTACHMENT_ADDED | TICKET_EDITED
+  description String
+  oldValue    String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketAssignment {
+  id       Int    @id @default(autoincrement())
+  ticketId Int
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  // Referencias débiles a identity-service.
+  assignedById         Int
+  previousTechnicianId Int?
+  newTechnicianId      Int
+
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model TicketSolution {
+  id       Int    @id @default(autoincrement())
+  ticketId Int
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  // Referencia débil a identity-service.
+  userId Int
+
+  problemIdentified String
+  cause             String?
+  solutionApplied   String
+  observations      String?
+  timeUsedMinutes   Int?
+  createdAt         DateTime @default(now())
+
+  @@index([ticketId])
+}
