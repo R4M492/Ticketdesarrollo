@@ -11,6 +11,7 @@ import type {
   Priority,
   Subcategory,
   Ticket,
+  TicketAttachment,
   TicketStatus,
   TimelineItem,
   User,
@@ -89,17 +90,42 @@ export interface TicketFilters {
   sla?: string;
 }
 
+export interface CreateTicketData {
+  subject: string;
+  categoryId: number;
+  subcategoryId?: number;
+  priorityId: number;
+  description: string;
+  location?: string;
+  device?: string;
+  inventoryNumber?: string;
+}
+
+// Nota de arquitectura (Fase 7 — attachment-service): el monolito original aceptaba los archivos
+// en la misma petición multipart de crear ticket / comentar. Ahora Ticket y TicketAttachment viven
+// en servicios distintos (ticketing-service no entiende multipart), así que subir un archivo es un
+// segundo paso explícito contra attachment-service, después de crear el ticket/comentario por JSON.
+// `create` y `addComment` abajo hacen ese segundo paso automáticamente cuando hay archivos, para
+// que el resto de la app siga llamándolos como una sola operación.
 export const ticketsApi = {
   list: (params?: TicketFilters) => api.get("/tickets", { params }).then((r) => r.data as Paginated<Ticket>),
   get: (id: number) => api.get(`/tickets/${id}`).then((r) => r.data as Ticket),
   history: (id: number) => api.get(`/tickets/${id}/history`).then((r) => r.data as TimelineItem[]),
-  create: (form: FormData) =>
-    api.post("/tickets", form, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data as Ticket),
+  create: async (data: CreateTicketData, files: File[] = []): Promise<Ticket> => {
+    const ticket = (await api.post("/tickets", data)).data as Ticket;
+    if (files.length > 0) {
+      await ticketsApi.uploadAttachments(ticket.id, files);
+    }
+    return ticket;
+  },
   update: (id: number, data: { subject?: string; description?: string }) => api.patch(`/tickets/${id}`, data),
-  addComment: (id: number, form: FormData) =>
-    api
-      .post(`/tickets/${id}/comments`, form, { headers: { "Content-Type": "multipart/form-data" } })
-      .then((r) => r.data),
+  addComment: async (id: number, comment: string, files: File[] = []) => {
+    const created = (await api.post(`/tickets/${id}/comments`, { comment })).data as { id: number };
+    if (files.length > 0) {
+      await ticketsApi.uploadAttachments(id, files, created.id);
+    }
+    return created;
+  },
   assign: (id: number, technicianId: number, reason?: string) =>
     api.post(`/tickets/${id}/assign`, { technicianId, reason }),
   reassign: (id: number, technicianId: number, reason?: string) =>
@@ -110,7 +136,31 @@ export const ticketsApi = {
   confirm: (id: number) => api.post(`/tickets/${id}/confirm`),
   reopen: (id: number, reason: string) => api.post(`/tickets/${id}/reopen`, { reason }),
   cancel: (id: number) => api.post(`/tickets/${id}/cancel`),
-  attachmentUrl: (ticketId: number, fileId: number) => `/api/tickets/${ticketId}/attachments/${fileId}`,
+  // ---- attachment-service (Fase 7) ----
+  attachments: (ticketId: number) =>
+    api.get(`/tickets/${ticketId}/attachments`).then((r) => r.data as TicketAttachment[]),
+  uploadAttachments: (ticketId: number, files: File[], commentId?: number) => {
+    const form = new FormData();
+    files.forEach((f) => form.append("files", f));
+    if (commentId) form.append("commentId", String(commentId));
+    return api
+      .post(`/tickets/${ticketId}/attachments`, form, { headers: { "Content-Type": "multipart/form-data" } })
+      .then((r) => r.data as TicketAttachment[]);
+  },
+  // Descarga autenticada: un <a href> plano no lleva el header Authorization (el access token vive
+  // en memoria de JS, no en una cookie — ver client.ts). Se pide el archivo por la instancia `api`
+  // (que sí adjunta el Bearer vía interceptor) como blob y se dispara la descarga en el navegador.
+  downloadAttachment: async (ticketId: number, fileId: string, filename: string): Promise<void> => {
+    const res = await api.get(`/tickets/${ticketId}/attachments/${fileId}`, { responseType: "blob" });
+    const url = window.URL.createObjectURL(res.data as Blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };
 
 // ---------- Notificaciones ----------
@@ -118,7 +168,7 @@ export const notificationsApi = {
   list: (params?: { page?: number; pageSize?: number; unreadOnly?: boolean }) =>
     api.get("/notifications", { params }).then((r) => r.data as Paginated<Notification>),
   unreadCount: () => api.get("/notifications/unread-count").then((r) => r.data as { count: number }),
-  markRead: (id: number) => api.post(`/notifications/${id}/read`),
+  markRead: (id: string) => api.post(`/notifications/${id}/read`),
   markAllRead: () => api.post("/notifications/read-all"),
 };
 

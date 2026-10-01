@@ -21,17 +21,30 @@ import { useAuth } from "../context/AuthContext";
 import { apiError } from "../api/client";
 import { ErrorAlert, Modal, PageLoader, PriorityBadge, SlaBadge, StatusBadge } from "../components/ui";
 import { fmtDate, fmtBytes, fmtMinutes, timeAgo } from "../utils/format";
-import type { TimelineItem } from "../types";
+import { useOrgDirectory } from "../hooks/useOrgDirectory";
+import type { TicketAttachment, TimelineItem } from "../types";
 
 export default function TicketDetail() {
   const { id } = useParams();
   const ticketId = Number(id);
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { companyName } = useOrgDirectory();
 
   const ticket = useQuery({ queryKey: ["ticket", ticketId], queryFn: () => ticketsApi.get(ticketId) });
   const timeline = useQuery({ queryKey: ["ticket-history", ticketId], queryFn: () => ticketsApi.history(ticketId) });
   const technicians = useQuery({ queryKey: ["technicians"], queryFn: usersApi.technicians });
+  // Fase 7: attachment-service es dueño de los adjuntos — ya no vienen embebidos en el comentario
+  // (ver backend/tickets/helpers.ts original vs. la nueva forma de TicketComment). Se traen aparte
+  // y se agrupan por commentId para pintarlos en la línea de tiempo.
+  const attachments = useQuery({ queryKey: ["ticket-attachments", ticketId], queryFn: () => ticketsApi.attachments(ticketId) });
+  const attachmentsByCommentId = new Map<number, TicketAttachment[]>();
+  for (const a of attachments.data ?? []) {
+    if (a.commentId == null) continue;
+    const list = attachmentsByCommentId.get(a.commentId) ?? [];
+    list.push(a);
+    attachmentsByCommentId.set(a.commentId, list);
+  }
 
   // UI state
   const [comment, setComment] = useState("");
@@ -53,6 +66,7 @@ export default function TicketDetail() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["ticket", ticketId] });
     qc.invalidateQueries({ queryKey: ["ticket-history", ticketId] });
+    qc.invalidateQueries({ queryKey: ["ticket-attachments", ticketId] });
     qc.invalidateQueries({ queryKey: ["tickets"] });
     qc.invalidateQueries({ queryKey: ["dashboard-summary"] });
   };
@@ -71,10 +85,7 @@ export default function TicketDetail() {
 
   const commentMutation = useMutation({
     mutationFn: async () => {
-      const form = new FormData();
-      form.append("comment", comment);
-      files.forEach((f) => form.append("files", f));
-      await ticketsApi.addComment(ticketId, form);
+      await ticketsApi.addComment(ticketId, comment, files);
     },
     onSuccess: () => {
       setComment("");
@@ -218,6 +229,29 @@ export default function TicketDetail() {
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Descripción del problema</p>
           <p className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">{t.description}</p>
         </div>
+
+        {/* Adjuntos generales del ticket (subidos al crearlo, sin comentario asociado) */}
+        {(attachments.data ?? []).filter((a) => a.commentId == null).length > 0 && (
+          <div className="mt-4">
+            <p className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <Paperclip className="h-3 w-3" /> Adjuntos del ticket
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(attachments.data ?? [])
+                .filter((a) => a.commentId == null)
+                .map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => ticketsApi.downloadAttachment(a.ticketId, a.id, a.originalName)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 hover:border-brand-400 hover:text-brand-700"
+                  >
+                    <Download className="h-3 w-3" /> {a.originalName} ({fmtBytes(a.sizeBytes)})
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Línea de tiempo */}
@@ -230,7 +264,11 @@ export default function TicketDetail() {
         ) : (
           <ol className="relative space-y-5 border-l-2 border-slate-200 pl-5">
             {timeline.data?.map((item) => (
-              <TimelineRow key={item.id} item={item} />
+              <TimelineRow
+                key={item.id}
+                item={item}
+                attachments={item.kind === "comment" ? attachmentsByCommentId.get(Number(item.id.slice(2))) : undefined}
+              />
             ))}
           </ol>
         )}
@@ -297,7 +335,7 @@ export default function TicketDetail() {
             <select className="input" required value={assignTech} onChange={(e) => setAssignTech(e.target.value)}>
               <option value="">Selecciona un técnico...</option>
               {technicians.data?.map((tech) => (
-                <option key={tech.id} value={tech.id}>{tech.name} ({tech.company?.name ?? "sin empresa"})</option>
+                <option key={tech.id} value={tech.id}>{tech.name} ({companyName(tech.companyId) ?? "sin empresa"})</option>
               ))}
             </select>
           </div>
@@ -425,7 +463,7 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function TimelineRow({ item }: { item: TimelineItem }) {
+function TimelineRow({ item, attachments }: { item: TimelineItem; attachments?: TicketAttachment[] }) {
   const colorMap: Record<string, string> = {
     history: "bg-slate-200",
     comment: "bg-brand-500",
@@ -444,18 +482,17 @@ function TimelineRow({ item }: { item: TimelineItem }) {
       {item.description && (
         <p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{item.description}</p>
       )}
-      {item.kind === "comment" && item.meta?.attachments && item.meta.attachments.length > 0 && (
+      {item.kind === "comment" && attachments && attachments.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-2">
-          {item.meta.attachments.map((a) => (
-            <a
+          {attachments.map((a) => (
+            <button
               key={a.id}
-              href={`/api/tickets/${a.ticketId}/attachments/${a.id}`}
-              target="_blank"
-              rel="noreferrer"
+              type="button"
+              onClick={() => ticketsApi.downloadAttachment(a.ticketId, a.id, a.originalName)}
               className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 hover:border-brand-400 hover:text-brand-700"
             >
               <Download className="h-3 w-3" /> {a.originalName} ({fmtBytes(a.sizeBytes)})
-            </a>
+            </button>
           ))}
         </div>
       )}

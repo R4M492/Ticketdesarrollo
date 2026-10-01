@@ -131,7 +131,9 @@ export interface Ticket {
 }
 
 export interface TicketAttachment {
-  id: number;
+  // Nota: attachment-service (arquitectura de microservicios) guarda adjuntos en MongoDB, así
+  // que el id es un ObjectId en string, no el entero autoincremental que devolvía el monolito.
+  id: string;
   ticketId: number;
   commentId?: number | null;
   userId: number;
@@ -161,7 +163,8 @@ export interface TimelineItem {
 }
 
 export interface Notification {
-  id: number;
+  // notification-service (MongoDB) — mismo motivo que TicketAttachment.id arriba.
+  id: string;
   userId: number;
   ticketId?: number | null;
   ticket?: { id: number; ticketNumber: string; subject: string } | null;
@@ -200,7 +203,8 @@ export interface ChartDatum {
 }
 
 export interface AuditLog {
-  id: number;
+  // audit-service (MongoDB) — mismo motivo que TicketAttachment.id arriba.
+  id: string;
   userId?: number | null;
   user?: { id: number; name: string; email: string } | null;
   action: string;

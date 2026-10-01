@@ -164,8 +164,8 @@ export default function Users() {
                     <p className="text-xs text-slate-400">{u.phone ?? ""}</p>
                   </td>
                   <td>
-                    <p className="text-sm text-slate-600">{u.company?.name ?? "—"}</p>
-                    <p className="text-xs text-slate-400">{u.department?.name ?? ""}</p>
+                    <p className="text-sm text-slate-600">{companies.data?.find((c) => c.id === u.companyId)?.name ?? "—"}</p>
+                    <p className="text-xs text-slate-400">{departments.data?.find((d) => d.id === u.departmentId)?.name ?? ""}</p>
                   </td>
                   <td><Badge color={ROLE_COLORS[u.role.code] ?? "#64748b"}>{u.role.name}</Badge></td>
                   <td>

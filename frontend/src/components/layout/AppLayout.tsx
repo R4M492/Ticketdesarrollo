@@ -22,7 +22,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { notificationsApi } from "../../api/endpoints";
 import { timeAgo } from "../../utils/format";
-import type { RoleCode } from "../../types";
+import type { Notification, RoleCode } from "../../types";
 
 interface MenuItem {
   to: string;
@@ -86,7 +86,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifs, setNotifs] = useState<{ id: number; title: string; message: string; createdAt: string; isRead: boolean; ticketId?: number | null }[]>([]);
+  const [notifs, setNotifs] = useState<Notification[]>([]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);

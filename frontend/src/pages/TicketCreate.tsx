@@ -7,10 +7,12 @@ import { useAuth } from "../context/AuthContext";
 import { apiError } from "../api/client";
 import { ErrorAlert } from "../components/ui";
 import { fmtBytes } from "../utils/format";
+import { useOrgDirectory } from "../hooks/useOrgDirectory";
 
 export default function TicketCreate() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { companyName, departmentName } = useOrgDirectory();
 
   const categories = useQuery({ queryKey: ["categories"], queryFn: catalogApi.categories });
   const priorities = useQuery({ queryKey: ["priorities"], queryFn: catalogApi.priorities });
@@ -34,17 +36,19 @@ export default function TicketCreate() {
     setError("");
     setLoading(true);
     try {
-      const form = new FormData();
-      form.append("subject", subject);
-      form.append("categoryId", categoryId);
-      form.append("priorityId", priorityId);
-      if (subcategoryId) form.append("subcategoryId", subcategoryId);
-      form.append("description", description);
-      if (location) form.append("location", location);
-      if (device) form.append("device", device);
-      if (inventoryNumber) form.append("inventoryNumber", inventoryNumber);
-      files.forEach((f) => form.append("files", f));
-      const ticket = await ticketsApi.create(form);
+      const ticket = await ticketsApi.create(
+        {
+          subject,
+          categoryId: Number(categoryId),
+          priorityId: Number(priorityId),
+          subcategoryId: subcategoryId ? Number(subcategoryId) : undefined,
+          description,
+          location: location || undefined,
+          device: device || undefined,
+          inventoryNumber: inventoryNumber || undefined,
+        },
+        files,
+      );
       navigate(`/tickets/${ticket.id}`);
     } catch (err) {
       setError(apiError(err, "No se pudo crear el ticket"));
@@ -79,11 +83,11 @@ export default function TicketCreate() {
             </div>
             <div>
               <label className="label">Empresa</label>
-              <input className="input bg-slate-50" value={user?.company?.name ?? "—"} readOnly />
+              <input className="input bg-slate-50" value={companyName(user?.companyId) ?? "—"} readOnly />
             </div>
             <div>
               <label className="label">Departamento</label>
-              <input className="input bg-slate-50" value={user?.department?.name ?? "—"} readOnly />
+              <input className="input bg-slate-50" value={departmentName(user?.departmentId) ?? "—"} readOnly />
             </div>
             <div className="sm:col-span-2">
               <label className="label">Teléfono</label>

@@ -6,11 +6,13 @@ import { apiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { ErrorAlert } from "../components/ui";
 import { fmtDate } from "../utils/format";
+import { useOrgDirectory } from "../hooks/useOrgDirectory";
 
 export default function Profile() {
   const { user, setUser } = useAuth();
   const qc = useQueryClient();
   const me = useQuery({ queryKey: ["me"], queryFn: authApi.me, enabled: !!user });
+  const { companyName, departmentName } = useOrgDirectory();
 
   const [name, setName] = useState(user?.name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
@@ -81,8 +83,8 @@ export default function Profile() {
           <InfoRow icon={<Mail className="h-4 w-4" />} label="Correo" value={data?.email} />
           <InfoRow icon={<Phone className="h-4 w-4" />} label="Teléfono" value={data?.phone} />
           <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={data?.position} />
-          <InfoRow icon={<Building2 className="h-4 w-4" />} label="Empresa" value={data?.company?.name} />
-          <InfoRow icon={<Building2 className="h-4 w-4" />} label="Departamento" value={data?.department?.name} />
+          <InfoRow icon={<Building2 className="h-4 w-4" />} label="Empresa" value={companyName(data?.companyId)} />
+          <InfoRow icon={<Building2 className="h-4 w-4" />} label="Departamento" value={departmentName(data?.departmentId)} />
           <InfoRow icon={<ShieldCheck className="h-4 w-4" />} label="Rol" value={data?.role.name} />
           <InfoRow icon={<UserIcon className="h-4 w-4" />} label="Miembro desde" value={data ? fmtDate(data.createdAt) : undefined} />
           <InfoRow icon={<UserIcon className="h-4 w-4" />} label="Último acceso" value={data?.lastLoginAt ? fmtDate(data.lastLoginAt) : undefined} />
