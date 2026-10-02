@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Download, PlusCircle, Filter, X } from "lucide-react";
 import { ticketsApi, catalogApi } from "../api/endpoints";
+import { apiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { EmptyState, ErrorAlert, PageLoader, Pagination, PriorityBadge, SlaBadge, StatusBadge } from "../components/ui";
 import { fmtDate, timeAgo } from "../utils/format";
@@ -14,6 +15,7 @@ export default function TicketsList() {
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(params.get("search") ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const page = Number(params.get("page") ?? 1);
   const statusCode = params.get("statusCode") ?? undefined;
@@ -69,16 +71,23 @@ export default function TicketsList() {
         </div>
         <div className="flex gap-2">
           {user?.role.code === "MASTER" && (
-            <a
-              href={`/api/tickets/export?${params.toString()}`}
+            <button
+              type="button"
               className="btn-secondary"
-              onClick={(e) => {
-                e.preventDefault();
-                window.open(`/api/tickets/export?${params.toString()}`, "_blank");
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await ticketsApi.exportCsv(filters);
+                } catch (err) {
+                  alert(apiError(err, "No se pudo exportar el CSV"));
+                } finally {
+                  setExporting(false);
+                }
               }}
             >
-              <Download className="h-4 w-4" /> Exportar CSV
-            </a>
+              <Download className="h-4 w-4" /> {exporting ? "Exportando..." : "Exportar CSV"}
+            </button>
           )}
           <Link to="/tickets/new" className="btn-primary">
             <PlusCircle className="h-4 w-4" /> Nuevo ticket

@@ -18,6 +18,20 @@ import type {
   User,
 } from "../types";
 
+// Dispara la descarga de un blob ya recibido (ver nota en `downloadAttachment` más abajo:
+// un <a href>/window.open plano no lleva el header Authorization, por eso todo archivo se
+// pide primero por la instancia `api`, que sí lo adjunta vía interceptor).
+function downloadBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 // ---------- Auth ----------
 export const authApi = {
   login: (email: string, password: string, rememberMe: boolean) =>
@@ -153,14 +167,12 @@ export const ticketsApi = {
   // (que sí adjunta el Bearer vía interceptor) como blob y se dispara la descarga en el navegador.
   downloadAttachment: async (ticketId: number, fileId: string, filename: string): Promise<void> => {
     const res = await api.get(`/tickets/${ticketId}/attachments/${fileId}`, { responseType: "blob" });
-    const url = window.URL.createObjectURL(res.data as Blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    downloadBlob(res.data as Blob, filename);
+  },
+  // Mismo motivo que downloadAttachment: no se puede usar window.open/<a href> directo.
+  exportCsv: async (params?: TicketFilters): Promise<void> => {
+    const res = await api.get("/tickets/export", { params, responseType: "blob" });
+    downloadBlob(res.data as Blob, `tickets-${new Date().toISOString().slice(0, 10)}.csv`);
   },
 };
 
@@ -195,9 +207,10 @@ export const reportsApi = {
   productivity: (params?: Record<string, unknown>) => api.get("/reports/productivity", { params }).then((r) => r.data),
   sla: (params?: Record<string, unknown>) => api.get("/reports/sla", { params }).then((r) => r.data),
   companies: (params?: Record<string, unknown>) => api.get("/reports/companies", { params }).then((r) => r.data),
-  exportUrl: (params?: Record<string, unknown>) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
-    return `/api/reports/export${qs ? `?${qs}` : ""}`;
+  // Mismo motivo que ticketsApi.exportCsv: un <a href>/window.open plano no lleva el Bearer token.
+  exportCsv: async (params?: Record<string, unknown>): Promise<void> => {
+    const res = await api.get("/reports/export", { params, responseType: "blob" });
+    downloadBlob(res.data as Blob, `reporte-tickets-${new Date().toISOString().slice(0, 10)}.csv`);
   },
 };
 

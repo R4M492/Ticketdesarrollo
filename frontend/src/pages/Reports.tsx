@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, FileText, Users, Timer, Building2 } from "lucide-react";
 import { reportsApi } from "../api/endpoints";
+import { apiError } from "../api/client";
 import { ErrorAlert, PageLoader, PriorityBadge, SlaBadge } from "../components/ui";
 import { fmtDate, fmtMinutes } from "../utils/format";
 
@@ -10,6 +11,7 @@ type Tab = "tickets" | "productividad" | "sla" | "empresas";
 export default function Reports() {
   const [tab, setTab] = useState<Tab>("tickets");
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [exporting, setExporting] = useState(false);
 
   const tickets = useQuery({ queryKey: ["report-tickets"], queryFn: () => reportsApi.tickets() });
   const productivity = useQuery({ queryKey: ["report-productivity", month], queryFn: () => reportsApi.productivity({ month }) });
@@ -23,8 +25,6 @@ export default function Reports() {
     { id: "empresas", label: "Empresas", icon: <Building2 className="h-4 w-4" /> },
   ];
 
-  const exportUrl = reportsApi.exportUrl({ month: month || undefined });
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -32,16 +32,23 @@ export default function Reports() {
           <h1 className="text-xl font-bold text-slate-800">Reportes</h1>
           <p className="text-sm text-slate-500">Estadísticas y productividad del soporte técnico</p>
         </div>
-        <a
-          href="#"
+        <button
+          type="button"
           className="btn-secondary"
-          onClick={(e) => {
-            e.preventDefault();
-            window.open(exportUrl, "_blank");
+          disabled={exporting}
+          onClick={async () => {
+            setExporting(true);
+            try {
+              await reportsApi.exportCsv({ month: month || undefined });
+            } catch (err) {
+              alert(apiError(err, "No se pudo exportar el CSV"));
+            } finally {
+              setExporting(false);
+            }
           }}
         >
-          <Download className="h-4 w-4" /> Exportar CSV
-        </a>
+          <Download className="h-4 w-4" /> {exporting ? "Exportando..." : "Exportar CSV"}
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-1 rounded-lg bg-slate-200/60 p-1">
