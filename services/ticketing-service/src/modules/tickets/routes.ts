@@ -238,9 +238,10 @@ ticketsRouter.post("/", validate({ body: createSchema }), async (req, res, next)
     if (!category || category.status !== "ACTIVE") throw new HttpError(400, "Categoría inválida");
     const priority = priorities.find((p) => p.id === data.priorityId);
     if (!priority || priority.status !== "ACTIVE") throw new HttpError(400, "Prioridad inválida");
+    let subcategory: { id: number; name: string } | undefined;
     if (data.subcategoryId) {
-      const sub = category.subcategories.find((s) => s.id === data.subcategoryId);
-      if (!sub) throw new HttpError(400, "Subcategoría inválida");
+      subcategory = category.subcategories.find((s) => s.id === data.subcategoryId);
+      if (!subcategory) throw new HttpError(400, "Subcategoría inválida");
     }
 
     const statusNuevo = await getStatusByCode("NUEVO", authorization);
@@ -294,7 +295,15 @@ ticketsRouter.post("/", validate({ body: createSchema }), async (req, res, next)
       ticketSubject: ticket.subject,
     }, authorization);
     notifyRequester(ticket, NOTIFICATION_TYPES.TICKET_CREATED, "Ticket creado", `Tu ticket ${ticket.ticketNumber} fue registrado correctamente.`);
-    sendTicketConfirmationEmail(ticket, me.email);
+    sendTicketConfirmationEmail(ticket, me.email, {
+      category: category.name,
+      subcategory: subcategory?.name,
+      priority: priority.name,
+      location: ticket.location,
+      device: ticket.device,
+      inventoryNumber: ticket.inventoryNumber,
+      description: ticket.description,
+    });
 
     const ctx = await buildEnrichContext([ticket], authorization);
     res.status(201).json(enrichTicket(ticket, ctx));
@@ -710,6 +719,27 @@ ticketsRouter.post("/:id/confirm", async (req, res, next) => {
     notifyTechnician(ticket.assignedTechnicianId, ticket, NOTIFICATION_TYPES.TICKET_CLOSED, "Ticket cerrado", `${ticket.ticketNumber} fue cerrado por el usuario.`);
     const ctx = await buildEnrichContext([updated], authorization);
     res.json(enrichTicket(updated, ctx));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================
+// POST /api/tickets/:id/resend-confirmation — reenvía el correo de confirmación del ticket
+// (mismo evento "email.send" que se dispara al crearlo). Existe para poder generar varios
+// trabajos de email.send sobre el MISMO ticket sin tener que crear tickets nuevos — útil para
+// probar el proveedor SMTP real o para seguir demostrando el patrón de reintentos/DLQ.
+// ============================================================
+ticketsRouter.post("/:id/resend-confirmation", async (req, res, next) => {
+  try {
+    const ticket = await getTicketOrThrow(Number(req.params.id), req.user!);
+    const user = req.user!;
+    if (user.role !== ROLES.MASTER && ticket.userId !== user.sub) {
+      throw new HttpError(403, "Solo el solicitante o el MASTER pueden reenviar la confirmación");
+    }
+    await sendTicketConfirmationEmail(ticket, ticket.requesterEmail);
+    logAudit({ userId: user.sub, action: "TICKET_EMAIL_RESENT", entityType: "TICKET", entityId: ticket.id, description: `Reenvió la confirmación por correo de ${ticket.ticketNumber}`, req });
+    res.json({ ok: true, to: ticket.requesterEmail });
   } catch (err) {
     next(err);
   }

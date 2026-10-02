@@ -149,6 +149,9 @@ export const ticketsApi = {
     api.post(`/tickets/${id}/status`, { status, comment }),
   resolve: (id: number, data: Record<string, unknown>) => api.post(`/tickets/${id}/resolve`, data),
   confirm: (id: number) => api.post(`/tickets/${id}/confirm`),
+  // Vuelve a publicar "email.send" para el mismo ticket — útil para generar varios envíos sin
+  // crear tickets nuevos (ver nota en ticketing-service/src/modules/tickets/routes.ts).
+  resendConfirmation: (id: number) => api.post(`/tickets/${id}/resend-confirmation`).then((r) => r.data as { ok: boolean; to: string }),
   reopen: (id: number, reason: string) => api.post(`/tickets/${id}/reopen`, { reason }),
   cancel: (id: number) => api.post(`/tickets/${id}/cancel`),
   // ---- attachment-service (Fase 7) ----

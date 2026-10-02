@@ -50,14 +50,41 @@ export async function notifyRole(
  * packages/common/src/events.ts, no para enviar correos reales (no hay proveedor SMTP
  * configurado en este entorno).
  */
+export interface TicketConfirmationDetails {
+  category?: string | null;
+  subcategory?: string | null;
+  priority?: string | null;
+  location?: string | null;
+  device?: string | null;
+  inventoryNumber?: string | null;
+  description: string;
+}
+
 export async function sendTicketConfirmationEmail(
   ticket: { id: number; ticketNumber: string; subject: string },
   to: string,
+  details?: TicketConfirmationDetails,
 ): Promise<void> {
+  const lines = [`Tu ticket "${ticket.subject}" fue registrado con el número ${ticket.ticketNumber}.`];
+  // El detalle completo del formulario solo se incluye al crear el ticket (details presente); un
+  // reenvío manual (POST /:id/resend-confirmation) no lo vuelve a pedir y manda solo la confirmación.
+  if (details) {
+    lines.push("");
+    lines.push("Detalle de tu solicitud:");
+    if (details.category) lines.push(`• Categoría: ${details.category}${details.subcategory ? ` / ${details.subcategory}` : ""}`);
+    if (details.priority) lines.push(`• Prioridad: ${details.priority}`);
+    if (details.location) lines.push(`• Ubicación: ${details.location}`);
+    if (details.device) lines.push(`• Equipo / dispositivo: ${details.device}`);
+    if (details.inventoryNumber) lines.push(`• Inventario: ${details.inventoryNumber}`);
+    lines.push(`• Descripción: ${details.description}`);
+    lines.push("");
+  }
+  lines.push("Te avisaremos por este medio cuando tenga una actualización.");
+
   await publishEvent(env.RABBITMQ_URL, "email.send", {
     to,
     subject: `Confirmación de ticket ${ticket.ticketNumber}`,
-    body: `Tu ticket "${ticket.subject}" fue registrado con el número ${ticket.ticketNumber}. Te avisaremos por este medio cuando tenga una actualización.`,
+    body: lines.join("\n"),
     ticketId: ticket.id,
     ticketNumber: ticket.ticketNumber,
     kind: "TICKET_CREATED",

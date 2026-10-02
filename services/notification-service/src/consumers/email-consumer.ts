@@ -1,6 +1,8 @@
 import { consumeEvents, type DomainEvent } from "@helpdesk/common";
 import { getDb } from "../db/mongo.js";
 import { env } from "../config/env.js";
+import { mailerConfigured, sendMail } from "../lib/mailer.js";
+import { buildEmailHtml } from "../lib/email-template.js";
 import type { JobDoc } from "../modules/jobs/routes.js";
 
 interface EmailJobPayload {
@@ -14,9 +16,10 @@ interface EmailJobPayload {
 
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 3000;
-// Probabilidad de fallo simulado — existe únicamente para poder demostrar en vivo el camino de
-// reintentos + dead-letter queue (ver packages/common/src/events.ts). No representa un fallo
-// real de envío: no hay proveedor SMTP conectado en este entorno, "enviar" es un console.log.
+// Probabilidad de fallo simulado — existe para poder demostrar en vivo el camino de reintentos +
+// dead-letter queue (ver packages/common/src/events.ts). Se aplica ANTES del envío real, así que
+// con SIMULATE_FAILURES=true un correo que "fallaría" nunca llega a intentar mandarse de verdad.
+// Desactívalo (SIMULATE_FAILURES=false) para que el envío real nunca falle a propósito.
 const SIMULATED_FAILURE_RATE = 0.4;
 
 /** Se suscribe a "email.send" (publicado por ticketing-service al crear un ticket) y simula el envío. */
@@ -46,11 +49,21 @@ export async function startEmailConsumer(): Promise<void> {
         { upsert: true },
       );
 
-      if (Math.random() < SIMULATED_FAILURE_RATE) {
+      if (env.SIMULATE_FAILURES && Math.random() < SIMULATED_FAILURE_RATE) {
         throw new Error("Fallo simulado del proveedor de correo (timeout de SMTP)");
       }
 
-      console.log(`[email] enviado a ${event.payload.to}: "${event.payload.subject}"`);
+      if (mailerConfigured) {
+        const html = buildEmailHtml({
+          heading: event.payload.subject,
+          bodyText: event.payload.body,
+          ticketNumber: event.payload.ticketNumber,
+        });
+        await sendMail({ to: event.payload.to, subject: event.payload.subject, text: event.payload.body, html });
+        console.log(`[email] enviado de verdad a ${event.payload.to}: "${event.payload.subject}"`);
+      } else {
+        console.log(`[email] SMTP no configurado — simulado para ${event.payload.to}: "${event.payload.subject}"`);
+      }
 
       await jobs.updateOne(
         { _id: event.eventId },

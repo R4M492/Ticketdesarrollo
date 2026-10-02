@@ -79,6 +79,7 @@ export default function TicketDetail() {
     qc.invalidateQueries({ queryKey: ["ticket", ticketId] });
     qc.invalidateQueries({ queryKey: ["ticket-history", ticketId] });
     qc.invalidateQueries({ queryKey: ["ticket-attachments", ticketId] });
+    qc.invalidateQueries({ queryKey: ["ticket-email-job", ticketId] });
     qc.invalidateQueries({ queryKey: ["tickets"] });
     qc.invalidateQueries({ queryKey: ["dashboard-summary"] });
   };
@@ -123,6 +124,7 @@ export default function TicketDetail() {
   const canReopen = (role === "MASTER" || isOwner) && ["RESUELTO", "CERRADO"].includes(t.status.code);
   const canCancel = (role === "MASTER" || isOwner) && isOpen;
   const canChangeStatus = role === "MASTER" || (role === "TECNICO" && isAssignedTech && ["ASIGNADO", "EN_PROCESO", "ESPERA_USUARIO"].includes(t.status.code));
+  const canResendConfirmation = role === "MASTER" || isOwner;
 
   const statusOptionsByCurrent: Record<string, { value: string; label: string }[]> = {
     ASIGNADO: [
@@ -243,14 +245,25 @@ export default function TicketDetail() {
         </div>
 
         {/* Trabajo en cola: confirmación por correo */}
-        {emailJob.data && emailJob.data.length > 0 && (
+        {(emailJob.data && emailJob.data.length > 0) || canResendConfirmation ? (
           <div className="mt-4">
-            <p className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              <Mail className="h-3 w-3" /> Confirmación por correo
-            </p>
-            <EmailJobBadge job={emailJob.data[0]} />
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <Mail className="h-3 w-3" /> Confirmación por correo
+              </p>
+              {canResendConfirmation && (
+                <button
+                  type="button"
+                  className="btn-ghost !px-2 !py-1 text-xs"
+                  onClick={() => run(() => ticketsApi.resendConfirmation(ticketId), "Correo de confirmación reenviado — procesando...")}
+                >
+                  <RefreshCw className="h-3 w-3" /> Reenviar
+                </button>
+              )}
+            </div>
+            {emailJob.data && emailJob.data.length > 0 && <EmailJobBadge job={emailJob.data[0]} />}
           </div>
-        )}
+        ) : null}
 
         {/* Adjuntos generales del ticket (subidos al crearlo, sin comentario asociado) */}
         {(attachments.data ?? []).filter((a) => a.commentId == null).length > 0 && (
